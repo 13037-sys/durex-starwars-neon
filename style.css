@@ -110,7 +110,7 @@ main {
 
 .brand-logo--durex {
     height: 34px;
-    filter: invert(1) drop-shadow(0 0 8px rgba(30, 20, 180, 0.5));
+    filter: drop-shadow(0 0 8px rgba(30, 20, 180, 0.5));
 }
 
 .brand-logo--starwars {
@@ -355,35 +355,6 @@ main {
     width: 100% !important;
     height: 100% !important;
     min-height: 200px;
-}
-
-/* ── Lightsaber SVG ── */
-.pack-saber {
-    position: absolute;
-    right: -14px;
-    top: 0;
-    height: 100%;
-    width: auto;
-    max-width: 44px;
-    z-index: 4;
-    pointer-events: none;
-    filter: drop-shadow(0 0 6px var(--pack-color));
-    animation: saberPulse 2.8s ease-in-out infinite;
-    transform-origin: bottom center;
-}
-
-@keyframes saberPulse {
-    0%, 100% { filter: drop-shadow(0 0 5px var(--pack-color)); opacity: 0.92; }
-    50%       { filter: drop-shadow(0 0 14px var(--pack-color)) drop-shadow(0 0 28px var(--pack-color)); opacity: 1; }
-}
-
-.packshot-item:hover .pack-saber {
-    animation: saberPulseHover 1.2s ease-in-out infinite;
-}
-
-@keyframes saberPulseHover {
-    0%, 100% { filter: drop-shadow(0 0 10px var(--pack-color)) drop-shadow(0 0 20px var(--pack-color)); }
-    50%       { filter: drop-shadow(0 0 18px var(--pack-color)) drop-shadow(0 0 40px var(--pack-color)); }
 }
 
 /* ── Condom CSS shape ── */
