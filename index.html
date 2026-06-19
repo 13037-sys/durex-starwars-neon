@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Durex x Star Wars | Neon Collection</title>
+    <meta name="description" content="Scopri la nuova linea di profilattici Neon ispirati alle spade laser di Star Wars. Che la Forza sia con te, anche al buio.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="quiz.css">
+</head>
+<body>
+
+    <!-- Header / Navigazione -->
+    <header class="main-header">
+        <div class="logo-container">
+            <img src="logo_durex.png" alt="Durex" class="brand-logo brand-logo--durex">
+            <span class="brand-separator">✕</span>
+            <img src="logo_starwars.png" alt="Star Wars" class="brand-logo brand-logo--starwars">
+        </div>
+        <div class="header-controls">
+            <button id="audio-toggle" class="control-btn" aria-label="Attiva Audio">
+                <span class="icon-sound-off">🔇 AUDIO OFF</span>
+                <span class="icon-sound-on hidden">🔊 AUDIO ON</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Canvas per lo sfondo stellato interattivo -->
+    <canvas id="starfield"></canvas>
+
+    <!-- Indicatori di scroll laterale per desktop -->
+    <nav class="side-nav" aria-label="Navigazione laterale">
+        <a href="#hero" class="nav-dot active" data-section="hero" aria-label="Hero Section"></a>
+        <a href="#game" class="nav-dot" data-section="game" aria-label="La Stanza Buia"></a>
+        <a href="#quiz" class="nav-dot" data-section="quiz" aria-label="Quiz Personalità"></a>
+        <a href="#characters" class="nav-dot" data-section="characters" aria-label="I Personaggi"></a>
+        <a href="#products" class="nav-dot" data-section="products" aria-label="Il Prodotto"></a>
+        <a href="#checkout" class="nav-dot" data-section="checkout" aria-label="Acquisto"></a>
+    </nav>
+
+    <main>
+        
+        <!-- SEZIONE 1: L'ATTERRAGGIO (Hero Section) -->
+        <section id="hero" class="fullscreen-section">
+            <div class="hero-content">
+                <div class="glow-container">
+                    <h1 class="glitch-title" data-text="NEON COLLECTION">NEON COLLECTION</h1>
+                </div>
+                <p class="hero-payoff">Che la Forza sia con te, anche al buio.</p>
+                <div class="scroll-indicator">
+                    <span class="scroll-text">Scorri per esplorare la galassia</span>
+                    <div class="mouse-icon">
+                        <div class="wheel"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEZIONE QUIZ: QUALE PERSONAGGIO SEI? -->
+        <section id="quiz" class="fullscreen-section">
+            <div class="quiz-wrapper">
+                <div class="quiz-header">
+                    <h2 class="section-title">Quale lato della Forza sei?</h2>
+                    <p class="section-subtitle">Rispondi alle domande e scopri quale personaggio Neon ti rappresenta.</p>
+                </div>
+                <div id="quiz-content"></div>
+            </div>
+        </section>
+
+        <!-- SEZIONE 2: L'ESPERIENZA IMMERSIVA (Il Gioco) -->
+        <section id="game" class="fullscreen-section">
+            <div class="game-container">
+                <div class="game-header">
+                    <h2 class="section-title">Accendi l'Energia al Buio</h2>
+                    <p class="section-subtitle">Spegni l'interruttore e trova il profilattico neon nascosto nella stanza usando la torcia.</p>
+                </div>
+                
+                <div class="game-viewport-wrapper">
+                    <!-- Interruttore Luce -->
+                    <div class="light-switch-container">
+                        <span class="switch-label">LUCE</span>
+                        <button id="light-switch" class="switch-btn on" aria-label="Spegni la luce">
+                            <span class="switch-handle"></span>
+                        </button>
+                    </div>
+
+                    <!-- Viewport del Gioco 3D / Canvas -->
+                    <div id="game-canvas-container" class="canvas-container">
+                        <!-- Canvas 3D (Three.js) -->
+                        <canvas id="three-game-canvas"></canvas>
+                        <!-- Canvas 2D per effetto torcia / visore al buio -->
+                        <canvas id="flashlight-overlay"></canvas>
+                        <!-- HUD counter preservativi -->
+                        <div id="game-hud" class="game-hud hidden">
+                            <span class="hud-icon">🔦</span>
+                            <span id="hud-label">Trova tutti i preservativi nascosti</span>
+                            <span class="hud-counter"><span id="hud-found">0</span> / <span id="hud-total">5</span></span>
+                        </div>
+                        <!-- Crosshair / mirino (visibile in dark mode) -->
+                        <div id="game-crosshair" class="game-crosshair"></div>
+                        <!-- Overlay click-to-play -->
+                        <div id="game-click-overlay" class="game-click-overlay">
+                            <div class="click-overlay-inner">
+                                <div class="click-icon">🎮</div>
+                                <p>Clicca per esplorare</p>
+                                <small>WASD · Mouse · Click per raccogliere · ESC per uscire</small>
+                            </div>
+                        </div>
+                        <!-- Hint drag-to-look -->
+                        <div id="game-drag-hint" class="game-drag-hint">
+                            <span class="drag-icon">⟳</span>
+                            <span>Trascina per guardare · WASD per muoverti · Clicca per raccogliere · F per la luce</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Banner di Successo -->
+                    <div id="game-success-banner" class="success-banner hidden">
+                        <h3>Caccia completata! 💥</h3>
+                        <p>Hai trovato tutti e 5 i preservativi nascosti! La Forza del Neon è attiva. Hai sbloccato uno sconto speciale del 20%:</p>
+                        <div class="coupon-code">NEONFORCE20</div>
+                        <button id="claim-coupon-btn" class="buy-now-btn">Usa lo sconto al checkout</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEZIONE 3: I PERSONAGGI (Card Showcase) -->
+
+        <section id="characters" class="fullscreen-section">
+            <div class="section-container">
+                <h2 class="section-title">Scegli il tuo Lato della Forza</h2>
+                <p class="section-subtitle">Passa sopra le card per svelare l'energia neon che si nasconde al buio.</p>
+                
+                <div class="cards-grid">
+                    <!-- Stormtrooper -->
+                    <div class="character-card" data-character="stormtrooper" data-color="#00ffff">
+                        <div class="card-glow"></div>
+                        <div class="card-corner-dot top-left"></div>
+                        <div class="card-corner-dot top-right"></div>
+                        <div class="card-corner-dot bottom-left"></div>
+                        <div class="card-corner-dot bottom-right"></div>
+
+                        <div class="card-content">
+                            <div class="card-header-bar">
+                                <span class="card-header-title">STORMTROOPER</span>
+                            </div>
+
+                            <div class="card-image-frame">
+                                <img src="char_stormtrooper.png" class="card-img" alt="Stormtrooper">
+                                <div class="frame-corner-dot top-left"></div>
+                                <div class="frame-corner-dot top-right"></div>
+                                <div class="frame-corner-dot bottom-left"></div>
+                                <div class="frame-corner-dot bottom-right"></div>
+                            </div>
+                            
+                            <div class="card-description-box">
+                                <p class="card-description">
+                                    Concentrato sull'azione pura e sulla resistenza fisica.<br>
+                                    Per chi punta dritto all'obiettivo, garantendo la massima protezione della galassia.<br>
+                                    Che la prestazione sia con te.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grogu -->
+                    <div class="character-card" data-character="grogu" data-color="#39ff14">
+                        <div class="card-glow"></div>
+                        <div class="card-corner-dot top-left"></div>
+                        <div class="card-corner-dot top-right"></div>
+                        <div class="card-corner-dot bottom-left"></div>
+                        <div class="card-corner-dot bottom-right"></div>
+
+                        <div class="card-content">
+                            <div class="card-header-bar">
+                                <span class="card-header-title">GROGU</span>
+                            </div>
+
+                            <div class="card-image-frame">
+                                <img src="char_grogu.png" class="card-img" alt="Grogu">
+                                <div class="frame-corner-dot top-left"></div>
+                                <div class="frame-corner-dot top-right"></div>
+                                <div class="frame-corner-dot bottom-left"></div>
+                                <div class="frame-corner-dot bottom-right"></div>
+                            </div>
+                            
+                            <div class="card-description-box">
+                                <p class="card-description">
+                                    Sembra innocuo e tenero, ma la sua Forza è immensa. Perfetto per chi vuole esplorare l'intimità con dolcezza, ma con sorprese che lasceranno a bocca aperta.<br>
+                                    Questa è la via.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mace Windu -->
+                    <div class="character-card" data-character="macewindu" data-color="#b026ff">
+                        <div class="card-glow"></div>
+                        <div class="card-corner-dot top-left"></div>
+                        <div class="card-corner-dot top-right"></div>
+                        <div class="card-corner-dot bottom-left"></div>
+                        <div class="card-corner-dot bottom-right"></div>
+
+                        <div class="card-content">
+                            <div class="card-header-bar">
+                                <span class="card-header-title">MACE WINDU</span>
+                            </div>
+
+                            <div class="card-image-frame">
+                                <img src="char_macewindu.png" class="card-img" alt="Mace Windu">
+                                <div class="frame-corner-dot top-left"></div>
+                                <div class="frame-corner-dot top-right"></div>
+                                <div class="frame-corner-dot bottom-left"></div>
+                                <div class="frame-corner-dot bottom-right"></div>
+                            </div>
+                            
+                            <div class="card-description-box">
+                                <p class="card-description">
+                                    Unisce la dolcezza del Lato Chiaro all'audacia del Lato Oscuro.<br>
+                                    Dedicato a chi non vuole scegliere tra romanticismo e trasgressione.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Darth Vader -->
+                    <div class="character-card" data-character="darthvader" data-color="#ff003c">
+                        <div class="card-glow"></div>
+                        <div class="card-corner-dot top-left"></div>
+                        <div class="card-corner-dot top-right"></div>
+                        <div class="card-corner-dot bottom-left"></div>
+                        <div class="card-corner-dot bottom-right"></div>
+
+                        <div class="card-content">
+                            <div class="card-header-bar">
+                                <span class="card-header-title">DARTH VADER</span>
+                            </div>
+
+                            <div class="card-image-frame">
+                                <img src="char_darthvader.png" class="card-img" alt="Darth Vader">
+                                <div class="frame-corner-dot top-left"></div>
+                                <div class="frame-corner-dot top-right"></div>
+                                <div class="frame-corner-dot bottom-left"></div>
+                                <div class="frame-corner-dot bottom-right"></div>
+                            </div>
+                            
+                            <div class="card-description-box">
+                                <p class="card-description">
+                                    Passione travolgente e impulsi dominanti.<br>
+                                    Non accetta un no come risposta e piega l'atmosfera al proprio volere.<br>
+                                    Dedicato a chi vuole una serata decisamente più... dark.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEZIONE 4: IL PRODOTTO (Packshot) -->
+
+        <section id="products" class="fullscreen-section">
+            <div class="section-container">
+                <h2 class="section-title">La Collezione</h2>
+                <p class="section-subtitle">Quattro varianti neon, quattro lati della Forza. Ognuno con la sua energia.</p>
+
+                <div class="packshots-grid">
+
+                    <!-- Stormtrooper – Blu -->
+                    <div class="packshot-item" data-character="stormtrooper" data-color="#00ffff">
+                        <div class="packshot-box">
+                            <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
+                            <div class="pack-visual">
+                                <canvas class="pack-canvas" data-color="#00ffff"></canvas>
+                            </div>
+                            <div class="pack-character">STORMTROOPER</div>
+                            <div class="pack-sub">NEON BLU · 12 pz</div>
+                        </div>
+                        <p class="packshot-caption">Blu Elettrico<br><span>Protezione · Precisione · Potenza</span></p>
+                    </div>
+
+                    <!-- Grogu – Verde -->
+                    <div class="packshot-item" data-character="grogu" data-color="#39ff14">
+                        <div class="packshot-box">
+                            <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
+                            <div class="pack-visual">
+                                <canvas class="pack-canvas" data-color="#39ff14"></canvas>
+                            </div>
+                            <div class="pack-character">GROGU</div>
+                            <div class="pack-sub">NEON VERDE · 12 pz</div>
+                        </div>
+                        <p class="packshot-caption">Verde Fluo<br><span>Dolcezza · Sorpresa · Forza</span></p>
+                    </div>
+
+                    <!-- Mace Windu – Viola -->
+                    <div class="packshot-item" data-character="macewindu" data-color="#b026ff">
+                        <div class="packshot-box">
+                            <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
+                            <div class="pack-visual">
+                                <canvas class="pack-canvas" data-color="#b026ff"></canvas>
+                            </div>
+                            <div class="pack-character">MACE WINDU</div>
+                            <div class="pack-sub">NEON VIOLA · 12 pz</div>
+                        </div>
+                        <p class="packshot-caption">Viola Profondo<br><span>Equilibrio · Audacia · Eleganza</span></p>
+                    </div>
+
+                    <!-- Darth Vader – Rosso -->
+                    <div class="packshot-item" data-character="darthvader" data-color="#ff003c">
+                        <div class="packshot-box">
+                            <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
+                            <div class="pack-visual">
+                                <canvas class="pack-canvas" data-color="#ff003c"></canvas>
+                            </div>
+                            <div class="pack-character">DARTH VADER</div>
+                            <div class="pack-sub">NEON ROSSO · 12 pz</div>
+                        </div>
+                        <p class="packshot-caption">Rosso Sith<br><span>Passione · Dominio · Dark</span></p>
+                    </div>
+
+                </div>
+
+                <p class="pack-tagline">Profilattici ultrasottili autoluminosi · Edizione Limitata Ufficiale</p>
+            </div>
+        </section>
+
+        <!-- SEZIONE 5: ACQUISTO (Carrello + Checkout) -->
+        <section id="checkout" class="checkout-section">
+            <div class="checkout-container">
+
+                <!-- COLONNA SX: Visualizzatore 3D -->
+                <div class="checkout-col-viewer">
+                    <div class="product-viewer">
+                        <div class="viewer-ambient-glow"></div>
+                        <div id="checkout-canvas-container" class="canvas-container">
+                            <canvas id="three-checkout-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="trust-indicators">
+                        <div class="trust-item">🛡️ Spedizione Anonima</div>
+                        <div class="trust-item">🔒 Pagamenti Sicuri</div>
+                        <div class="trust-item">⚡ Consegna 24h</div>
+                    </div>
+                </div>
+
+                <!-- COLONNA DX: Carrello + Form -->
+                <div class="checkout-col-form">
+
+                    <!-- ── RIEPILOGO ORDINE ── -->
+                    <div class="cart-section">
+                        <h2 class="cart-title">Il tuo Ordine</h2>
+
+                        <!-- Varianti multi-selezione -->
+                        <div class="multi-variant-grid">
+
+                            <div class="mv-row" data-variant="stormtrooper">
+                                <div class="mv-img-wrap" style="--mv-color:#0066ff">
+                                    <img src="card_stormtrooper.png" alt="Stormtrooper" class="mv-img">
+                                    <div class="mv-glow"></div>
+                                </div>
+                                <div class="mv-info">
+                                    <span class="mv-name">Stormtrooper</span>
+                                    <span class="mv-sub">Blu Elettrico · 12 pz</span>
+                                    <span class="mv-price">14,99 €</span>
+                                </div>
+                                <div class="mv-qty-ctrl">
+                                    <button class="mv-btn mv-minus" aria-label="Rimuovi">−</button>
+                                    <span class="mv-qty-val">0</span>
+                                    <button class="mv-btn mv-plus" aria-label="Aggiungi">+</button>
+                                </div>
+                            </div>
+
+                            <div class="mv-row" data-variant="grogu">
+                                <div class="mv-img-wrap" style="--mv-color:#39ff14">
+                                    <img src="card_grogu.png" alt="Grogu" class="mv-img">
+                                    <div class="mv-glow"></div>
+                                </div>
+                                <div class="mv-info">
+                                    <span class="mv-name">Grogu</span>
+                                    <span class="mv-sub">Verde Fluo · 12 pz</span>
+                                    <span class="mv-price">14,99 €</span>
+                                </div>
+                                <div class="mv-qty-ctrl">
+                                    <button class="mv-btn mv-minus" aria-label="Rimuovi">−</button>
+                                    <span class="mv-qty-val">0</span>
+                                    <button class="mv-btn mv-plus" aria-label="Aggiungi">+</button>
+                                </div>
+                            </div>
+
+                            <div class="mv-row" data-variant="macewindu">
+                                <div class="mv-img-wrap" style="--mv-color:#b026ff">
+                                    <img src="card_macewindu.png" alt="Mace Windu" class="mv-img">
+                                    <div class="mv-glow"></div>
+                                </div>
+                                <div class="mv-info">
+                                    <span class="mv-name">Mace Windu</span>
+                                    <span class="mv-sub">Viola Profondo · 12 pz</span>
+                                    <span class="mv-price">14,99 €</span>
+                                </div>
+                                <div class="mv-qty-ctrl">
+                                    <button class="mv-btn mv-minus" aria-label="Rimuovi">−</button>
+                                    <span class="mv-qty-val">0</span>
+                                    <button class="mv-btn mv-plus" aria-label="Aggiungi">+</button>
+                                </div>
+                            </div>
+
+                            <div class="mv-row" data-variant="darthvader">
+                                <div class="mv-img-wrap" style="--mv-color:#ff0033">
+                                    <img src="card_darthvader.png" alt="Darth Vader" class="mv-img">
+                                    <div class="mv-glow"></div>
+                                </div>
+                                <div class="mv-info">
+                                    <span class="mv-name">Darth Vader</span>
+                                    <span class="mv-sub">Rosso Sith · 12 pz</span>
+                                    <span class="mv-price">14,99 €</span>
+                                </div>
+                                <div class="mv-qty-ctrl">
+                                    <button class="mv-btn mv-minus" aria-label="Rimuovi">−</button>
+                                    <span class="mv-qty-val">0</span>
+                                    <button class="mv-btn mv-plus" aria-label="Aggiungi">+</button>
+                                </div>
+                            </div>
+
+                        </div><!-- /multi-variant-grid -->
+
+                        <!-- Nessun articolo selezionato -->
+                        <p class="cart-empty-msg" id="cart-empty-msg">Seleziona almeno una variante per procedere.</p>
+
+                        <!-- Coupon -->
+                        <div class="coupon-row" id="coupon-row">
+                            <input class="form-input coupon-input" id="f-coupon" type="text" placeholder="Hai un codice sconto?">
+                            <button id="apply-coupon-btn" class="coupon-apply-btn">Applica</button>
+                        </div>
+                        <p class="coupon-feedback hidden" id="coupon-feedback"></p>
+
+                        <!-- Totali -->
+                        <div class="cart-totals">
+                            <div class="cart-total-row">
+                                <span>Subtotale</span>
+                                <span id="subtotal-val">0,00 €</span>
+                            </div>
+                            <div class="cart-total-row">
+                                <span>Spedizione</span>
+                                <span id="shipping-val" class="shipping-free">GRATUITA</span>
+                            </div>
+                            <div class="cart-total-row discount-row hidden" id="discount-row">
+                                <span id="discount-label">Sconto NEONFORCE20</span>
+                                <span id="discount-val" class="discount-green">− 3,00 €</span>
+                            </div>
+                            <div class="cart-total-row cart-grand-total">
+                                <span>Totale</span>
+                                <span id="grand-total-val">0,00 €</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── DATI DI SPEDIZIONE ── -->
+                    <div class="shipping-section">
+                        <h3 class="form-section-title">Dati di Spedizione</h3>
+                        <form id="shipping-form" novalidate>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="f-nome">Nome *</label>
+                                    <input class="form-input" id="f-nome" type="text" placeholder="Leia" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="f-cognome">Cognome *</label>
+                                    <input class="form-input" id="f-cognome" type="text" placeholder="Organa" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="f-email">Email *</label>
+                                <input class="form-input" id="f-email" type="email" placeholder="leia@allianza.it" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="f-telefono">Telefono</label>
+                                <input class="form-input" id="f-telefono" type="tel" placeholder="+39 000 000 0000">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="f-indirizzo">Indirizzo *</label>
+                                <input class="form-input" id="f-indirizzo" type="text" placeholder="Via della Forza, 42" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group form-group--sm">
+                                    <label class="form-label" for="f-cap">CAP *</label>
+                                    <input class="form-input" id="f-cap" type="text" placeholder="00100" maxlength="5" required>
+                                </div>
+                                <div class="form-group form-group--lg">
+                                    <label class="form-label" for="f-citta">Città *</label>
+                                    <input class="form-input" id="f-citta" type="text" placeholder="Roma" required>
+                                </div>
+                                <div class="form-group form-group--xs">
+                                    <label class="form-label" for="f-prov">Prov.</label>
+                                    <input class="form-input" id="f-prov" type="text" placeholder="RM" maxlength="2">
+                                </div>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="f-anonima" checked>
+                                <label for="f-anonima">Spedizione discreta — pacco anonimo senza indicazioni sul contenuto</label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── METODO DI PAGAMENTO ── -->
+                    <div class="payment-section">
+                        <h3 class="form-section-title">Metodo di Pagamento</h3>
+                        <div class="payment-methods">
+                            <button class="pay-method active" data-method="card">
+                                <span class="pay-icon">💳</span>
+                                <span>Carta</span>
+                            </button>
+                            <button class="pay-method" data-method="paypal">
+                                <span class="pay-icon">🅿</span>
+                                <span>PayPal</span>
+                            </button>
+                            <button class="pay-method" data-method="apple">
+                                <span class="pay-icon"> </span>
+                                <span>Apple Pay</span>
+                            </button>
+                        </div>
+                        <div class="card-fields" id="card-fields">
+                            <div class="form-group">
+                                <label class="form-label" for="f-card-num">Numero Carta *</label>
+                                <input class="form-input" id="f-card-num" type="text" placeholder="•••• •••• •••• ••••" maxlength="19">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="f-card-exp">Scadenza *</label>
+                                    <input class="form-input" id="f-card-exp" type="text" placeholder="MM / AA" maxlength="7">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="f-card-cvv">CVV *</label>
+                                    <input class="form-input" id="f-card-cvv" type="text" placeholder="•••" maxlength="3">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── CONFERMA ── -->
+                    <button id="buy-btn" class="buy-now-btn buy-confirm-btn">
+                        <span id="buy-btn-label">CONFERMA ORDINE</span>
+                        <span class="buy-total-inline" id="buy-total-inline">14,99 €</span>
+                    </button>
+
+                    <p class="checkout-legal">Cliccando confermi di avere almeno 18 anni. Tutti i dati sono trattati secondo la nostra <a href="#">Privacy Policy</a>.</p>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer-legal">
+        <p>© 2026 Durex & Lucasfilm Ltd. Questo è un sito web promozionale concettuale. Tutti i diritti riservati.</p>
+    </footer>
+
+    <!-- ORDER SUCCESS OVERLAY -->
+    <div id="order-success-overlay" class="order-success-overlay hidden" aria-modal="true" role="dialog">
+        <canvas id="success-canvas"></canvas>
+        <div class="success-content">
+            <div class="success-icon-wrap">
+                <span class="success-icon">⚡</span>
+            </div>
+            <h2 class="success-title">Ordine Confermato!</h2>
+            <p class="success-tagline">Che la Forza sia con te, anche al buio.</p>
+
+            <div class="success-order-box">
+                <div class="success-row">
+                    <span class="success-row-label">Prodotto</span>
+                    <span class="success-row-val">DUREX NEON PACK — Ed. Limitata</span>
+                </div>
+                <div class="success-row">
+                    <span class="success-row-label">Variante</span>
+                    <span class="success-row-val" id="success-variant">Stormtrooper · Blu Elettrico</span>
+                </div>
+                <div class="success-row">
+                    <span class="success-row-label">Quantità</span>
+                    <span class="success-row-val" id="success-qty">1</span>
+                </div>
+                <div class="success-row success-row--total">
+                    <span class="success-row-label">Totale pagato</span>
+                    <span class="success-row-val" id="success-total">14,99 €</span>
+                </div>
+            </div>
+
+            <p class="success-email-note">Conferma inviata a <strong id="success-email">—</strong></p>
+            <div class="success-badges">
+                <span>🚀 Spedizione entro 24h</span>
+                <span>📦 Pacco anonimo</span>
+                <span>🔒 Pagamento sicuro</span>
+            </div>
+            <button id="success-close-btn" class="buy-now-btn success-close-btn">Torna alla Galassia</button>
+        </div>
+    </div>
+
+
+    <!-- Script Principale (ES Module) -->
+    <script type="module" src="app.js"></script>
+    <!-- Quiz Personalità -->
+    <script src="quiz.js"></script>
+</body>
+</html>
