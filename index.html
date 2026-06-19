@@ -279,6 +279,42 @@
                             <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
                             <div class="pack-visual">
                                 <canvas class="pack-canvas" data-color="#00ffff"></canvas>
+                                <svg class="pack-saber" viewBox="0 0 44 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <defs>
+                                        <filter id="glow-storm" x="-120%" y="-5%" width="340%" height="110%">
+                                            <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                        <linearGradient id="blade-storm" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                                            <stop offset="30%" stop-color="#00ffff" stop-opacity="1"/>
+                                            <stop offset="100%" stop-color="#00ffff" stop-opacity="0.75"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <!-- Outer blade glow -->
+                                    <rect x="14" y="10" width="16" height="200" rx="8" fill="#00ffff" opacity="0.25" filter="url(#glow-storm)"/>
+                                    <!-- Mid blade -->
+                                    <rect x="17" y="10" width="10" height="200" rx="5" fill="url(#blade-storm)" opacity="0.7" filter="url(#glow-storm)"/>
+                                    <!-- Core blade -->
+                                    <rect x="20" y="10" width="4" height="200" rx="2" fill="#ffffff" opacity="0.95"/>
+                                    <!-- Blade tip -->
+                                    <ellipse cx="22" cy="10" rx="2" ry="4" fill="#ffffff"/>
+                                    <!-- Emitter guard -->
+                                    <rect x="12" y="208" width="20" height="7" rx="2" fill="#3a3a4a"/>
+                                    <rect x="10" y="211" width="24" height="4" rx="2" fill="#2a2a3a"/>
+                                    <!-- Hilt body -->
+                                    <rect x="15" y="215" width="14" height="62" rx="3" fill="#1e1e2e"/>
+                                    <!-- Grip rings -->
+                                    <rect x="14" y="222" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="230" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="238" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="246" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <!-- Activation button -->
+                                    <circle cx="29" cy="233" r="2.5" fill="#00ffff" opacity="0.8"/>
+                                    <!-- Pommel -->
+                                    <rect x="16" y="277" width="12" height="8" rx="3" fill="#252535"/>
+                                    <rect x="18" y="283" width="8" height="4" rx="2" fill="#1a1a2a"/>
+                                </svg>
                             </div>
                             <div class="pack-character">STORMTROOPER</div>
                             <div class="pack-sub">NEON BLU · 12 pz</div>
@@ -292,6 +328,33 @@
                             <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
                             <div class="pack-visual">
                                 <canvas class="pack-canvas" data-color="#39ff14"></canvas>
+                                <svg class="pack-saber" viewBox="0 0 44 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <defs>
+                                        <filter id="glow-grogu" x="-120%" y="-5%" width="340%" height="110%">
+                                            <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                        <linearGradient id="blade-grogu" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                                            <stop offset="30%" stop-color="#39ff14" stop-opacity="1"/>
+                                            <stop offset="100%" stop-color="#39ff14" stop-opacity="0.75"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="14" y="10" width="16" height="200" rx="8" fill="#39ff14" opacity="0.25" filter="url(#glow-grogu)"/>
+                                    <rect x="17" y="10" width="10" height="200" rx="5" fill="url(#blade-grogu)" opacity="0.7" filter="url(#glow-grogu)"/>
+                                    <rect x="20" y="10" width="4" height="200" rx="2" fill="#ffffff" opacity="0.95"/>
+                                    <ellipse cx="22" cy="10" rx="2" ry="4" fill="#ffffff"/>
+                                    <rect x="12" y="208" width="20" height="7" rx="2" fill="#3a3a4a"/>
+                                    <rect x="10" y="211" width="24" height="4" rx="2" fill="#2a2a3a"/>
+                                    <rect x="15" y="215" width="14" height="62" rx="3" fill="#1e1e2e"/>
+                                    <rect x="14" y="222" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="230" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="238" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="246" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <circle cx="29" cy="233" r="2.5" fill="#39ff14" opacity="0.8"/>
+                                    <rect x="16" y="277" width="12" height="8" rx="3" fill="#252535"/>
+                                    <rect x="18" y="283" width="8" height="4" rx="2" fill="#1a1a2a"/>
+                                </svg>
                             </div>
                             <div class="pack-character">GROGU</div>
                             <div class="pack-sub">NEON VERDE · 12 pz</div>
@@ -305,6 +368,33 @@
                             <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
                             <div class="pack-visual">
                                 <canvas class="pack-canvas" data-color="#b026ff"></canvas>
+                                <svg class="pack-saber" viewBox="0 0 44 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <defs>
+                                        <filter id="glow-mace" x="-120%" y="-5%" width="340%" height="110%">
+                                            <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                        <linearGradient id="blade-mace" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                                            <stop offset="30%" stop-color="#b026ff" stop-opacity="1"/>
+                                            <stop offset="100%" stop-color="#b026ff" stop-opacity="0.75"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="14" y="10" width="16" height="200" rx="8" fill="#b026ff" opacity="0.25" filter="url(#glow-mace)"/>
+                                    <rect x="17" y="10" width="10" height="200" rx="5" fill="url(#blade-mace)" opacity="0.7" filter="url(#glow-mace)"/>
+                                    <rect x="20" y="10" width="4" height="200" rx="2" fill="#ffffff" opacity="0.95"/>
+                                    <ellipse cx="22" cy="10" rx="2" ry="4" fill="#ffffff"/>
+                                    <rect x="12" y="208" width="20" height="7" rx="2" fill="#3a3a4a"/>
+                                    <rect x="10" y="211" width="24" height="4" rx="2" fill="#2a2a3a"/>
+                                    <rect x="15" y="215" width="14" height="62" rx="3" fill="#1e1e2e"/>
+                                    <rect x="14" y="222" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="230" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="238" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="246" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <circle cx="29" cy="233" r="2.5" fill="#b026ff" opacity="0.8"/>
+                                    <rect x="16" y="277" width="12" height="8" rx="3" fill="#252535"/>
+                                    <rect x="18" y="283" width="8" height="4" rx="2" fill="#1a1a2a"/>
+                                </svg>
                             </div>
                             <div class="pack-character">MACE WINDU</div>
                             <div class="pack-sub">NEON VIOLA · 12 pz</div>
@@ -318,6 +408,33 @@
                             <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
                             <div class="pack-visual">
                                 <canvas class="pack-canvas" data-color="#ff003c"></canvas>
+                                <svg class="pack-saber" viewBox="0 0 44 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <defs>
+                                        <filter id="glow-vader" x="-120%" y="-5%" width="340%" height="110%">
+                                            <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                        <linearGradient id="blade-vader" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                                            <stop offset="30%" stop-color="#ff003c" stop-opacity="1"/>
+                                            <stop offset="100%" stop-color="#ff003c" stop-opacity="0.75"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="14" y="10" width="16" height="200" rx="8" fill="#ff003c" opacity="0.25" filter="url(#glow-vader)"/>
+                                    <rect x="17" y="10" width="10" height="200" rx="5" fill="url(#blade-vader)" opacity="0.7" filter="url(#glow-vader)"/>
+                                    <rect x="20" y="10" width="4" height="200" rx="2" fill="#ffffff" opacity="0.95"/>
+                                    <ellipse cx="22" cy="10" rx="2" ry="4" fill="#ffffff"/>
+                                    <rect x="12" y="208" width="20" height="7" rx="2" fill="#3a3a4a"/>
+                                    <rect x="10" y="211" width="24" height="4" rx="2" fill="#2a2a3a"/>
+                                    <rect x="15" y="215" width="14" height="62" rx="3" fill="#1e1e2e"/>
+                                    <rect x="14" y="222" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="230" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="238" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <rect x="14" y="246" width="16" height="3" rx="1.5" fill="#2e2e3e"/>
+                                    <circle cx="29" cy="233" r="2.5" fill="#ff003c" opacity="0.8"/>
+                                    <rect x="16" y="277" width="12" height="8" rx="3" fill="#252535"/>
+                                    <rect x="18" y="283" width="8" height="4" rx="2" fill="#1a1a2a"/>
+                                </svg>
                             </div>
                             <div class="pack-character">DARTH VADER</div>
                             <div class="pack-sub">NEON ROSSO · 12 pz</div>
