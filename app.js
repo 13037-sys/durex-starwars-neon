@@ -532,6 +532,7 @@ function showOrderSuccess() {
 
     startMeteorExplosion(primaryHex);
 
+
     document.getElementById('success-close-btn').onclick = () => {
         overlay.classList.remove('visible');
         setTimeout(() => overlay.classList.add('hidden'), 500);
@@ -549,108 +550,86 @@ function startMeteorExplosion(primaryColor) {
     resize();
     window.addEventListener('resize', resize);
 
-    // Palette: colore del personaggio scelto + tutti e 4 i neon
-    const palette = ['#0066ff', '#39ff14', '#b026ff', '#ff0033', '#ffffff', primaryColor];
+    const palette = ['#00ffff', '#39ff14', '#b026ff', '#ff003c', '#ffffff', primaryColor];
+    const meteors = [];
+    let rafId;
+    let running = true;
 
-    const particles = [];
-
-    function spawnBurst(x, y, count, speed, sizeRange) {
-        for (let i = 0; i < count; i++) {
-            const angle  = Math.random() * Math.PI * 2;
-            const spd    = speed * (0.4 + Math.random() * 0.9);
-            const color  = palette[Math.floor(Math.random() * palette.length)];
-            const size   = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]);
-            particles.push({
-                x, y,
-                vx: Math.cos(angle) * spd,
-                vy: Math.sin(angle) * spd - Math.random() * spd * 0.5,
-                ax: 0,
-                ay: 0.06 + Math.random() * 0.04,   // gravità leggera
-                size,
-                color,
-                alpha: 1,
-                decay: 0.008 + Math.random() * 0.012,
-                trail: [],
-                isStreamer: Math.random() < 0.3,     // alcune sono lunghe scie
-                twinkle: Math.random() < 0.2,
-            });
-        }
+    function spawnMeteor() {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.4; // ~45° verso in basso-destra
+        const speed = 18 + Math.random() * 14;
+        const trailLen = 120 + Math.random() * 180;
+        meteors.push({
+            x: Math.random() * canvas.width * 1.2 - canvas.width * 0.1,
+            y: -20 - Math.random() * canvas.height * 0.3,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            color,
+            size: 1.5 + Math.random() * 2,
+            trailLen,
+            alpha: 1,
+            life: 0,
+            maxLife: trailLen / speed * 1.8,
+        });
     }
 
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
+    // Spawn iniziale e poi a intervalli
+    for (let i = 0; i < 14; i++) setTimeout(spawnMeteor, i * 60);
+    const spawnInterval = setInterval(() => {
+        if (!running) { clearInterval(spawnInterval); return; }
+        spawnMeteor();
+        if (Math.random() < 0.4) spawnMeteor();
+    }, 100);
 
-    // Prima esplosione centrale grande
-    spawnBurst(cx, cy, 180, 14, [2, 7]);
-
-    // Burst secondari ritardati agli angoli
-    setTimeout(() => spawnBurst(cx * 0.3, cy * 0.4, 80, 10, [1.5, 5]), 300);
-    setTimeout(() => spawnBurst(cx * 1.7, cy * 0.4, 80, 10, [1.5, 5]), 500);
-    setTimeout(() => spawnBurst(cx,        cy * 1.6, 60, 9,  [1.5, 4]), 700);
-    setTimeout(() => spawnBurst(cx * 0.5, cy * 1.3, 50, 8,  [1, 4]),   900);
-    setTimeout(() => spawnBurst(cx * 1.5, cy * 1.3, 50, 8,  [1, 4]),   1100);
-    // Onda finale grande
-    setTimeout(() => spawnBurst(cx, cy, 120, 18, [1, 5]),               1400);
-
-    let rafId;
-    let t = 0;
+    setTimeout(() => {
+        running = false;
+        clearInterval(spawnInterval);
+    }, 4500);
 
     function draw() {
         rafId = requestAnimationFrame(draw);
-        t++;
-
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        for (let i = particles.length - 1; i >= 0; i--) {
-            const p = particles[i];
+        for (let i = meteors.length - 1; i >= 0; i--) {
+            const m = meteors[i];
+            m.x += m.vx;
+            m.y += m.vy;
+            m.life++;
 
-            // Aggiorna fisica
-            p.vx += p.ax;
-            p.vy += p.ay;
-            p.x  += p.vx;
-            p.y  += p.vy;
-            p.alpha -= p.decay;
+            const fade = Math.max(0, 1 - m.life / m.maxLife);
+            if (fade <= 0) { meteors.splice(i, 1); continue; }
 
-            if (p.alpha <= 0) { particles.splice(i, 1); continue; }
-
-            const a = p.twinkle ? p.alpha * (0.5 + 0.5 * Math.sin(t * 0.3)) : p.alpha;
+            // Scia con gradiente
+            const tailX = m.x - m.vx * (m.trailLen / 12);
+            const tailY = m.y - m.vy * (m.trailLen / 12);
+            const grad = ctx.createLinearGradient(tailX, tailY, m.x, m.y);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(0.6, `${m.color}44`);
+            grad.addColorStop(1, m.color);
 
             ctx.save();
-            ctx.globalAlpha = Math.max(0, a);
+            ctx.globalAlpha = fade;
+            ctx.strokeStyle = grad;
+            ctx.lineWidth   = m.size;
+            ctx.lineCap     = 'round';
+            ctx.shadowColor = m.color;
+            ctx.shadowBlur  = 10;
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.lineTo(m.x, m.y);
+            ctx.stroke();
 
-            if (p.isStreamer) {
-                // Scia lunga
-                ctx.strokeStyle = p.color;
-                ctx.lineWidth   = p.size * 0.5;
-                ctx.lineCap     = 'round';
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur  = 6;
-                ctx.beginPath();
-                ctx.moveTo(p.x - p.vx * 6, p.y - p.vy * 6);
-                ctx.lineTo(p.x, p.y);
-                ctx.stroke();
-            } else {
-                // Particella con alone
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur  = p.size * 3;
-                ctx.fillStyle   = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Nucleo bianco
-                ctx.shadowBlur = 0;
-                ctx.fillStyle  = 'rgba(255,255,255,0.6)';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * 0.35, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
+            // Testa luminosa
+            ctx.shadowBlur  = 18;
+            ctx.fillStyle   = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.size * 1.2, 0, Math.PI * 2);
+            ctx.fill();
             ctx.restore();
         }
 
-        // Stop quando tutte le particelle sono sparite
-        if (t > 300 && particles.length === 0) {
+        if (!running && meteors.length === 0) {
             cancelAnimationFrame(rafId);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }

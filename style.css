@@ -1013,10 +1013,10 @@ main {
 /* Barra comandi in-game (riavvia + esci) — fixed sopra tutto */
 .game-controls-bar {
     position: fixed;
-    top: 14px;
-    right: 14px;
+    top: 90px;
+    right: 24px;
     display: flex;
-    gap: 8px;
+    gap: 16px;
     z-index: 9999;
 }
 
@@ -2438,4 +2438,6 @@ main {
 .success-close-btn {
     width: 100%;
     max-width: 280px;
+    display: block;
+    margin: 0 auto;
 }
