@@ -12,7 +12,7 @@ const CHARACTERS = [
     nome: 'STORMTROOPER',
     sottotitolo: 'Neon Blu · Blu Elettrico',
     descrizione: 'Concentrato sull\'azione pura e sulla resistenza fisica. Per chi punta dritto all\'obiettivo, garantendo la massima protezione della galassia. Che la prestazione sia con te.',
-    immagine: 'char_stormtrooper.png',
+    immagine: 'card_stormtrooper.png',
     colore: 'hsl(180, 100%, 50%)',
     coloreHsl: '180, 100%, 50%',
     tratti: {
@@ -25,10 +25,10 @@ const CHARACTERS = [
   },
   {
     id: 'grogu',
-    nome: 'GROGU',
+    nome: 'BABY YODA',
     sottotitolo: 'Neon Verde · Verde Fluo',
     descrizione: 'Sembra innocuo e tenero, ma la sua Forza è immensa. Perfetto per chi vuole esplorare l\'intimità con dolcezza, ma con sorprese che lasceranno a bocca aperta. Questa è la via.',
-    immagine: 'char_grogu.png',
+    immagine: 'card_grogu.png',
     colore: 'hsl(120, 100%, 54%)',
     coloreHsl: '120, 100%, 54%',
     tratti: {
@@ -44,7 +44,7 @@ const CHARACTERS = [
     nome: 'MACE WINDU',
     sottotitolo: 'Neon Viola · Viola Profondo',
     descrizione: 'Unisce la dolcezza del Lato Chiaro all\'audacia del Lato Oscuro. Dedicato a chi non vuole scegliere tra romanticismo e trasgressione. Equilibrio, audacia, eleganza.',
-    immagine: 'char_macewindu.png',
+    immagine: 'card_macewindu.png',
     colore: 'hsl(282, 100%, 58%)',
     coloreHsl: '282, 100%, 58%',
     tratti: {
@@ -60,7 +60,7 @@ const CHARACTERS = [
     nome: 'DARTH VADER',
     sottotitolo: 'Neon Rosso · Rosso Sith',
     descrizione: 'Passione travolgente e impulsi dominanti. Non accetta un no come risposta e piega l\'atmosfera al proprio volere. Dedicato a chi vuole una serata decisamente più... dark.',
-    immagine: 'char_darthvader.png',
+    immagine: 'card_darthvader.png',
     colore: 'hsl(346, 100%, 50%)',
     coloreHsl: '346, 100%, 50%',
     tratti: {
@@ -402,7 +402,6 @@ function showResult() {
       <div class="quiz-result-body">
         <div class="quiz-result-img-wrap">
           <img src="${c.immagine}" alt="${c.nome}" class="quiz-result-img">
-          <div class="quiz-result-img-glow" style="background: radial-gradient(ellipse at center, hsla(${c.coloreHsl}, 0.35) 0%, transparent 70%);"></div>
         </div>
 
         <div class="quiz-result-info">

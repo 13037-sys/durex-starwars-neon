@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=3">
-    <link rel="stylesheet" href="quiz.css">
+    <link rel="stylesheet" href="style.css?v=20">
+    <link rel="stylesheet" href="quiz.css?v=3">
 </head>
 <body>
 
@@ -38,8 +38,8 @@
     <!-- Indicatori di scroll laterale per desktop -->
     <nav class="side-nav" aria-label="Navigazione laterale">
         <a href="#hero" class="nav-dot active" data-section="hero" aria-label="Hero Section"></a>
-        <a href="#game" class="nav-dot" data-section="game" aria-label="La Stanza Buia"></a>
         <a href="#quiz" class="nav-dot" data-section="quiz" aria-label="Quiz Personalità"></a>
+        <a href="#game" class="nav-dot" data-section="game" aria-label="La Stanza Buia"></a>
         <a href="#characters" class="nav-dot" data-section="characters" aria-label="I Personaggi"></a>
         <a href="#products" class="nav-dot" data-section="products" aria-label="Il Prodotto"></a>
         <a href="#checkout" class="nav-dot" data-section="checkout" aria-label="Acquisto"></a>
@@ -74,62 +74,58 @@
             </div>
         </section>
 
-        <!-- SEZIONE 2: L'ESPERIENZA IMMERSIVA (Il Gioco) -->
+        <!-- SEZIONE GIOCO: LA STANZA BUIA -->
         <section id="game" class="fullscreen-section">
             <div class="game-container">
                 <div class="game-header">
-                    <h2 class="section-title">Accendi l'Energia al Buio</h2>
-                    <p class="section-subtitle">Spegni l'interruttore e trova il profilattico neon nascosto nella stanza usando la torcia.</p>
+                    <h2 class="section-title">Trova i Pacchetti Neon</h2>
+                    <p class="section-subtitle">La stanza è quasi buia. Usa la torcia UV e scopri i 4 packaging nascosti che brillano nel buio.</p>
                 </div>
-                
                 <div class="game-viewport-wrapper">
-                    <!-- Interruttore Luce -->
-                    <div class="light-switch-container">
-                        <span class="switch-label">LUCE</span>
-                        <button id="light-switch" class="switch-btn on" aria-label="Spegni la luce">
-                            <span class="switch-handle"></span>
-                        </button>
-                    </div>
-
-                    <!-- Viewport del Gioco 3D / Canvas -->
                     <div id="game-canvas-container" class="canvas-container">
-                        <!-- Canvas 3D (Three.js) -->
                         <canvas id="three-game-canvas"></canvas>
-                        <!-- Canvas 2D per effetto torcia / visore al buio -->
                         <canvas id="flashlight-overlay"></canvas>
-                        <!-- HUD counter preservativi -->
-                        <div id="game-hud" class="game-hud hidden">
+                        <div id="game-hud" class="game-hud">
                             <span class="hud-icon">🔦</span>
-                            <span id="hud-label">Trova tutti i preservativi nascosti</span>
-                            <span class="hud-counter"><span id="hud-found">0</span> / <span id="hud-total">5</span></span>
+                            <span id="hud-label">Muovi il mouse per esplorare</span>
+                            <span class="hud-counter"><span id="hud-found">0</span> / <span id="hud-total">4</span></span>
                         </div>
-                        <!-- Crosshair / mirino (visibile in dark mode) -->
                         <div id="game-crosshair" class="game-crosshair"></div>
-                        <!-- Overlay click-to-play -->
-                        <div id="game-click-overlay" class="game-click-overlay">
-                            <div class="click-overlay-inner">
-                                <div class="click-icon">🎮</div>
-                                <p>Clicca per esplorare</p>
-                                <small>WASD · Mouse · Click per raccogliere · ESC per uscire</small>
+                        <!-- Overlay "Gioca" — nascosto una volta entrati -->
+                        <div id="game-play-overlay" class="game-play-overlay">
+                            <div class="game-play-inner">
+                                <p class="game-play-hint">La stanza è buia.<br>Usa la torcia UV per trovare i 4 pack nascosti.</p>
+                                <button id="game-play-btn" class="game-play-btn">▶ Gioca</button>
                             </div>
                         </div>
-                        <!-- Hint drag-to-look -->
-                        <div id="game-drag-hint" class="game-drag-hint">
-                            <span class="drag-icon">⟳</span>
-                            <span>Trascina per guardare · WASD per muoverti · Clicca per raccogliere · F per la luce</span>
+                        <div class="game-dpad">
+                            <button class="dpad-btn dpad-up"    data-key="ArrowUp">▲</button>
+                            <button class="dpad-btn dpad-left"  data-key="ArrowLeft">◀</button>
+                            <button class="dpad-btn dpad-center"></button>
+                            <button class="dpad-btn dpad-right" data-key="ArrowRight">▶</button>
+                            <button class="dpad-btn dpad-down"  data-key="ArrowDown">▼</button>
                         </div>
                     </div>
-                    
-                    <!-- Banner di Successo -->
                     <div id="game-success-banner" class="success-banner hidden">
-                        <h3>Caccia completata! 💥</h3>
-                        <p>Hai trovato tutti e 5 i preservativi nascosti! La Forza del Neon è attiva. Hai sbloccato uno sconto speciale del 20%:</p>
-                        <div class="coupon-code">NEONFORCE20</div>
-                        <button id="claim-coupon-btn" class="buy-now-btn">Usa lo sconto al checkout</button>
+                        <h3>Missione completata! 🌟</h3>
+                        <p>Hai trovato tutti e 4 i packaging neon! Hai sbloccato uno sconto esclusivo del <strong>10%</strong> già applicato al tuo carrello:</p>
+                        <div class="coupon-code" id="game-coupon-display">NEON10</div>
+                        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px">
+                            <button id="claim-coupon-btn" class="buy-now-btn">Vai al checkout</button>
+                            <button id="replay-game-btn" class="buy-now-btn" style="background:transparent;border:1px solid rgba(0,255,255,0.5);color:#0ff">Rigioca</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Controlli gioco fullscreen (position:fixed, sempre sopra tutto) -->
+        <div id="game-controls-bar" class="game-controls-bar" style="display:none">
+            <button id="game-restart-btn" class="game-ctrl-btn">↺ Riavvia</button>
+            <button id="game-quit-btn"    class="game-ctrl-btn">✕ Esci</button>
+        </div>
+        <!-- Pulsante per uscire dal fullscreen gioco -->
+        <button id="game-exit-fullscreen">Continua ↓</button>
 
         <!-- SEZIONE 3: I PERSONAGGI (Card Showcase) -->
 
@@ -141,122 +137,136 @@
                 <div class="cards-grid">
                     <!-- Stormtrooper -->
                     <div class="character-card" data-character="stormtrooper" data-color="#00ffff">
-                        <div class="card-glow"></div>
-                        <div class="card-corner-dot top-left"></div>
-                        <div class="card-corner-dot top-right"></div>
-                        <div class="card-corner-dot bottom-left"></div>
-                        <div class="card-corner-dot bottom-right"></div>
-
-                        <div class="card-content">
-                            <div class="card-header-bar">
-                                <span class="card-header-title">STORMTROOPER</span>
+                        <div class="card-inner">
+                            <!-- FRONTE -->
+                            <div class="card-face card-front">
+                                <div class="card-glow"></div>
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-image-frame">
+                                    <img src="card_stormtrooper.png?v=1782491086" class="card-img" alt="Stormtrooper">
+                                    <div class="card-name-overlay">STORMTROOPER</div>
+                                </div>
                             </div>
-
-                            <div class="card-image-frame">
-                                <img src="char_stormtrooper.png" class="card-img" alt="Stormtrooper">
-                                <div class="frame-corner-dot top-left"></div>
-                                <div class="frame-corner-dot top-right"></div>
-                                <div class="frame-corner-dot bottom-left"></div>
-                                <div class="frame-corner-dot bottom-right"></div>
-                            </div>
-                            
-                            <div class="card-description-box">
-                                <p class="card-description">
-                                    Concentrato sull'azione pura e sulla resistenza fisica.<br>
-                                    Per chi punta dritto all'obiettivo, garantendo la massima protezione della galassia.<br>
-                                    Che la prestazione sia con te.
-                                </p>
+                            <!-- RETRO -->
+                            <div class="card-face card-back">
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-back-content">
+                                    <p class="card-back-bio">Concentrato sull'azione pura e sulla resistenza fisica. Per chi punta dritto all'obiettivo, garantendo la massima protezione della galassia.</p>
+                                    <div class="card-stats">
+                                        <div class="stat-row"><span class="stat-label">Potenza</span><div class="stat-bar"><div class="stat-fill" style="--pct:90%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Precisione</span><div class="stat-bar"><div class="stat-fill" style="--pct:85%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Resistenza</span><div class="stat-bar"><div class="stat-fill" style="--pct:95%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Fedeltà</span><div class="stat-bar"><div class="stat-fill" style="--pct:100%"></div></div></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Grogu -->
+                    <!-- Baby Yoda -->
                     <div class="character-card" data-character="grogu" data-color="#39ff14">
-                        <div class="card-glow"></div>
-                        <div class="card-corner-dot top-left"></div>
-                        <div class="card-corner-dot top-right"></div>
-                        <div class="card-corner-dot bottom-left"></div>
-                        <div class="card-corner-dot bottom-right"></div>
-
-                        <div class="card-content">
-                            <div class="card-header-bar">
-                                <span class="card-header-title">GROGU</span>
+                        <div class="card-inner">
+                            <!-- FRONTE -->
+                            <div class="card-face card-front">
+                                <div class="card-glow"></div>
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-image-frame">
+                                    <img src="card_grogu.png?v=1782491086" class="card-img" alt="Baby Yoda">
+                                    <div class="card-name-overlay">BABY YODA</div>
+                                </div>
                             </div>
-
-                            <div class="card-image-frame">
-                                <img src="char_grogu.png" class="card-img" alt="Grogu">
-                                <div class="frame-corner-dot top-left"></div>
-                                <div class="frame-corner-dot top-right"></div>
-                                <div class="frame-corner-dot bottom-left"></div>
-                                <div class="frame-corner-dot bottom-right"></div>
-                            </div>
-                            
-                            <div class="card-description-box">
-                                <p class="card-description">
-                                    Sembra innocuo e tenero, ma la sua Forza è immensa. Perfetto per chi vuole esplorare l'intimità con dolcezza, ma con sorprese che lasceranno a bocca aperta.<br>
-                                    Questa è la via.
-                                </p>
+                            <!-- RETRO -->
+                            <div class="card-face card-back">
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-back-content">
+                                    <p class="card-back-bio">Sembra innocuo e tenero, ma la sua Forza è immensa. Perfetto per chi vuole esplorare l'intimità con dolcezza e sorprese inaspettate.</p>
+                                    <div class="card-stats">
+                                        <div class="stat-row"><span class="stat-label">Forza</span><div class="stat-bar"><div class="stat-fill" style="--pct:100%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Dolcezza</span><div class="stat-bar"><div class="stat-fill" style="--pct:98%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Mistero</span><div class="stat-bar"><div class="stat-fill" style="--pct:88%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Sorpresa</span><div class="stat-bar"><div class="stat-fill" style="--pct:92%"></div></div></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Mace Windu -->
                     <div class="character-card" data-character="macewindu" data-color="#b026ff">
-                        <div class="card-glow"></div>
-                        <div class="card-corner-dot top-left"></div>
-                        <div class="card-corner-dot top-right"></div>
-                        <div class="card-corner-dot bottom-left"></div>
-                        <div class="card-corner-dot bottom-right"></div>
-
-                        <div class="card-content">
-                            <div class="card-header-bar">
-                                <span class="card-header-title">MACE WINDU</span>
+                        <div class="card-inner">
+                            <!-- FRONTE -->
+                            <div class="card-face card-front">
+                                <div class="card-glow"></div>
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-image-frame">
+                                    <img src="card_macewindu.png?v=1782491086" class="card-img" alt="Mace Windu">
+                                    <div class="card-name-overlay">MACE WINDU</div>
+                                </div>
                             </div>
-
-                            <div class="card-image-frame">
-                                <img src="char_macewindu.png" class="card-img" alt="Mace Windu">
-                                <div class="frame-corner-dot top-left"></div>
-                                <div class="frame-corner-dot top-right"></div>
-                                <div class="frame-corner-dot bottom-left"></div>
-                                <div class="frame-corner-dot bottom-right"></div>
-                            </div>
-                            
-                            <div class="card-description-box">
-                                <p class="card-description">
-                                    Unisce la dolcezza del Lato Chiaro all'audacia del Lato Oscuro.<br>
-                                    Dedicato a chi non vuole scegliere tra romanticismo e trasgressione.
-                                </p>
+                            <!-- RETRO -->
+                            <div class="card-face card-back">
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-back-content">
+                                    <p class="card-back-bio">Unisce la dolcezza del Lato Chiaro all'audacia del Lato Oscuro. Per chi non vuole scegliere tra romanticismo e trasgressione.</p>
+                                    <div class="card-stats">
+                                        <div class="stat-row"><span class="stat-label">Potere</span><div class="stat-bar"><div class="stat-fill" style="--pct:95%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Equilibrio</span><div class="stat-bar"><div class="stat-fill" style="--pct:90%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Eleganza</span><div class="stat-bar"><div class="stat-fill" style="--pct:97%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Audacia</span><div class="stat-bar"><div class="stat-fill" style="--pct:85%"></div></div></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Darth Vader -->
                     <div class="character-card" data-character="darthvader" data-color="#ff003c">
-                        <div class="card-glow"></div>
-                        <div class="card-corner-dot top-left"></div>
-                        <div class="card-corner-dot top-right"></div>
-                        <div class="card-corner-dot bottom-left"></div>
-                        <div class="card-corner-dot bottom-right"></div>
-
-                        <div class="card-content">
-                            <div class="card-header-bar">
-                                <span class="card-header-title">DARTH VADER</span>
+                        <div class="card-inner">
+                            <!-- FRONTE -->
+                            <div class="card-face card-front">
+                                <div class="card-glow"></div>
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-image-frame">
+                                    <img src="card_darthvader.png?v=1782491086" class="card-img" alt="Darth Vader">
+                                    <div class="card-name-overlay">DARTH VADER</div>
+                                </div>
                             </div>
-
-                            <div class="card-image-frame">
-                                <img src="char_darthvader.png" class="card-img" alt="Darth Vader">
-                                <div class="frame-corner-dot top-left"></div>
-                                <div class="frame-corner-dot top-right"></div>
-                                <div class="frame-corner-dot bottom-left"></div>
-                                <div class="frame-corner-dot bottom-right"></div>
-                            </div>
-                            
-                            <div class="card-description-box">
-                                <p class="card-description">
-                                    Passione travolgente e impulsi dominanti.<br>
-                                    Non accetta un no come risposta e piega l'atmosfera al proprio volere.<br>
-                                    Dedicato a chi vuole una serata decisamente più... dark.
-                                </p>
+                            <!-- RETRO -->
+                            <div class="card-face card-back">
+                                <div class="card-corner-dot top-left"></div>
+                                <div class="card-corner-dot top-right"></div>
+                                <div class="card-corner-dot bottom-left"></div>
+                                <div class="card-corner-dot bottom-right"></div>
+                                <div class="card-back-content">
+                                    <p class="card-back-bio">Passione travolgente e impulsi dominanti. Non accetta un no come risposta. Dedicato a chi vuole una serata decisamente più... dark.</p>
+                                    <div class="card-stats">
+                                        <div class="stat-row"><span class="stat-label">Oscurità</span><div class="stat-bar"><div class="stat-fill" style="--pct:100%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Potenza</span><div class="stat-bar"><div class="stat-fill" style="--pct:100%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Dominio</span><div class="stat-bar"><div class="stat-fill" style="--pct:98%"></div></div></div>
+                                        <div class="stat-row"><span class="stat-label">Intensità</span><div class="stat-bar"><div class="stat-fill" style="--pct:95%"></div></div></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -286,14 +296,14 @@
                         <p class="packshot-caption">Blu Elettrico<br><span>Protezione · Precisione · Potenza</span></p>
                     </div>
 
-                    <!-- Grogu – Verde -->
+                    <!-- Baby Yoda – Verde -->
                     <div class="packshot-item" data-character="grogu" data-color="#39ff14">
                         <div class="packshot-box">
                             <div class="pack-top-label">DUREX <span>×</span> STAR WARS</div>
                             <div class="pack-visual">
                                 <canvas class="pack-canvas" data-color="#39ff14"></canvas>
                             </div>
-                            <div class="pack-character">GROGU</div>
+                            <div class="pack-character">BABY YODA</div>
                             <div class="pack-sub">NEON VERDE · 12 pz</div>
                         </div>
                         <p class="packshot-caption">Verde Fluo<br><span>Dolcezza · Sorpresa · Forza</span></p>
@@ -335,12 +345,12 @@
         <section id="checkout" class="checkout-section">
             <div class="checkout-container">
 
-                <!-- COLONNA SX: Visualizzatore 3D -->
+                <!-- COLONNA SX: Visualizzatore Packaging -->
                 <div class="checkout-col-viewer">
                     <div class="product-viewer">
-                        <div class="viewer-ambient-glow"></div>
-                        <div id="checkout-canvas-container" class="canvas-container">
-                            <canvas id="three-checkout-canvas"></canvas>
+                        <div class="viewer-ambient-glow" id="viewer-glow"></div>
+                        <div id="checkout-canvas-container" class="canvas-container checkout-img-viewer">
+                            <img id="checkout-pack-img" src="pack_stormtrooper.png?v=5" alt="Packaging selezionato" class="checkout-pack-img">
                         </div>
                     </div>
                     <div class="trust-indicators">
@@ -362,7 +372,7 @@
 
                             <div class="mv-row" data-variant="stormtrooper">
                                 <div class="mv-img-wrap" style="--mv-color:#0066ff">
-                                    <img src="card_stormtrooper.png" alt="Stormtrooper" class="mv-img">
+                                    <img src="card_stormtrooper.png?v=1782491086" alt="Stormtrooper" class="mv-img">
                                     <div class="mv-glow"></div>
                                 </div>
                                 <div class="mv-info">
@@ -379,11 +389,11 @@
 
                             <div class="mv-row" data-variant="grogu">
                                 <div class="mv-img-wrap" style="--mv-color:#39ff14">
-                                    <img src="card_grogu.png" alt="Grogu" class="mv-img">
+                                    <img src="card_grogu.png?v=1782491086" alt="Baby Yoda" class="mv-img">
                                     <div class="mv-glow"></div>
                                 </div>
                                 <div class="mv-info">
-                                    <span class="mv-name">Grogu</span>
+                                    <span class="mv-name">Baby Yoda</span>
                                     <span class="mv-sub">Verde Fluo · 12 pz</span>
                                     <span class="mv-price">14,99 €</span>
                                 </div>
@@ -396,7 +406,7 @@
 
                             <div class="mv-row" data-variant="macewindu">
                                 <div class="mv-img-wrap" style="--mv-color:#b026ff">
-                                    <img src="card_macewindu.png" alt="Mace Windu" class="mv-img">
+                                    <img src="card_macewindu.png?v=1782491086" alt="Mace Windu" class="mv-img">
                                     <div class="mv-glow"></div>
                                 </div>
                                 <div class="mv-info">
@@ -413,7 +423,7 @@
 
                             <div class="mv-row" data-variant="darthvader">
                                 <div class="mv-img-wrap" style="--mv-color:#ff0033">
-                                    <img src="card_darthvader.png" alt="Darth Vader" class="mv-img">
+                                    <img src="card_darthvader.png?v=1782491086" alt="Darth Vader" class="mv-img">
                                     <div class="mv-glow"></div>
                                 </div>
                                 <div class="mv-info">
@@ -602,8 +612,8 @@
 
 
     <!-- Script Principale (ES Module) -->
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=12"></script>
     <!-- Quiz Personalità -->
-    <script src="quiz.js"></script>
+    <script src="quiz.js?v=4"></script>
 </body>
 </html>

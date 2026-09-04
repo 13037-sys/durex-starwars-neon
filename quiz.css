@@ -247,11 +247,11 @@
 
 /* ── Scheda Risultato ── */
 .quiz-result-card {
-  background: var(--char-color-dim, rgba(12,12,22,0.9));
-  border: 1.5px solid var(--char-color, var(--neon-blue));
+  background: rgba(12,12,22,0.95);
+  border: 1.5px solid rgba(255,255,255,0.1);
   border-radius: 16px;
   padding: 36px 32px;
-  box-shadow: 0 0 50px -10px var(--char-color, var(--neon-blue));
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 28px;

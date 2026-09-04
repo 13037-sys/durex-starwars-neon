@@ -15,10 +15,10 @@ gsap.registerPlugin(ScrollTrigger);
 // Stato dell'applicazione
 const state = {
     audioEnabled: false,
-    themeColor: '#00ffff', // Blu di default (Stormtrooper)
+    themeColor: '#00ffff',
     themeName: 'blue',
     discountUnlocked: false,
-    lightIsOn: true,
+    lightIsOn: false,
     gameCompleted: false,
     starSpeedMultiplier: 1.0,
     selectedCharacterColor: '#00ffff'
@@ -44,7 +44,92 @@ document.addEventListener('DOMContentLoaded', () => {
     initGameSection();
     initCheckoutSection();
     initUiControls();
+    initGameFullscreen();
 });
+
+/* ==========================================================================
+   FULLSCREEN SCROLL-LOCK PER IL GIOCO
+   ========================================================================== */
+function initGameFullscreen() {
+    const wrapper     = document.querySelector('.game-viewport-wrapper');
+    const exitBtn     = document.getElementById('game-exit-fullscreen');
+    const playOverlay = document.getElementById('game-play-overlay');
+    const playBtn     = document.getElementById('game-play-btn');
+    const ctrlBar     = document.getElementById('game-controls-bar');
+    const nextSection = document.getElementById('characters');
+    if (!wrapper || !exitBtn || !playBtn) return;
+
+    let isFullscreen = false;
+    let gameUnlocked = false;
+
+    function enterFullscreen() {
+        if (isFullscreen) return;
+        isFullscreen = true;
+        playOverlay?.classList.add('hidden');
+        if (ctrlBar) ctrlBar.style.display = 'flex';
+        wrapper.classList.add('game-fullscreen');
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('wheel', preventScroll, { passive: false });
+        window.addEventListener('touchmove', preventScroll, { passive: false });
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            window.dispatchEvent(new Event('resize'));
+        }));
+    }
+
+    function exitFullscreen() {
+        if (!isFullscreen) return;
+        isFullscreen = false;
+        gameUnlocked = true;
+        wrapper.classList.remove('game-fullscreen');
+        document.body.style.overflow = '';
+        window.removeEventListener('wheel', preventScroll);
+        window.removeEventListener('touchmove', preventScroll);
+        exitBtn.classList.remove('visible');
+        if (ctrlBar) ctrlBar.style.display = 'none';
+        playOverlay?.classList.remove('hidden');
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            window.dispatchEvent(new Event('resize'));
+        }));
+    }
+
+    function preventScroll(e) { e.preventDefault(); }
+
+    // Entra in gioco solo al click del pulsante
+    playBtn.addEventListener('click', enterFullscreen);
+
+    // Ridimensiona renderer quando il wrapper cambia dimensione
+    if (window.ResizeObserver) {
+        new ResizeObserver(() => window.dispatchEvent(new Event('resize'))).observe(wrapper);
+    }
+
+    // Sblocca al completamento (mostra "Continua")
+    const pollCompletion = setInterval(() => {
+        if (state.gameCompleted && isFullscreen) {
+            clearInterval(pollCompletion);
+            exitBtn.classList.add('visible');
+        }
+    }, 500);
+
+    // Pulsante "Continua ↓"
+    exitBtn.addEventListener('click', () => {
+        exitFullscreen();
+        setTimeout(() => nextSection?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+
+    // Bottone ESCI
+    document.getElementById('game-quit-btn')?.addEventListener('click', exitFullscreen);
+
+    // Bottone RIAVVIA
+    document.getElementById('game-restart-btn')?.addEventListener('click', () => {
+        exitBtn.classList.remove('visible');
+        document.getElementById('replay-game-btn')?.click();
+    });
+
+    // Rigioca dal banner vittoria
+    document.getElementById('replay-game-btn')?.addEventListener('click', () => {
+        exitBtn.classList.remove('visible');
+    });
+}
 
 /* ==========================================================================
    CURSORE SPADA LASER
@@ -112,9 +197,10 @@ const PRICE_UNIT   = 14.99;
 const DISCOUNT_AMT = 3.00;
 
 const VALID_COUPONS = {
-    'NEONFORCE20': { amount: 3.00, label: 'NEONFORCE20' },
-    'STARWARS10':  { amount: 1.50, label: 'STARWARS10'  },
-    'DUREX2026':   { amount: 2.00, label: 'DUREX2026'   },
+    'NEONFORCE20': { amount: 3.00,                        label: 'NEONFORCE20' },
+    'NEON10':      { amount: Math.round(PRICE_UNIT*0.10*100)/100, label: 'NEON10' },
+    'STARWARS10':  { amount: 1.50,                        label: 'STARWARS10'  },
+    'DUREX2026':   { amount: 2.00,                        label: 'DUREX2026'   },
 };
 
 // qty per variante: { stormtrooper: 0, grogu: 0, macewindu: 0, darthvader: 0 }
@@ -127,7 +213,7 @@ const cartState = {
 
 const variantMeta = {
     stormtrooper: { label: 'Stormtrooper · Blu Elettrico', img: 'card_stormtrooper.png', hex: '#0066ff' },
-    grogu:        { label: 'Grogu · Verde Fluo',           img: 'card_grogu.png',        hex: '#39ff14' },
+    grogu:        { label: 'Baby Yoda · Verde Fluo',           img: 'card_grogu.png',        hex: '#39ff14' },
     macewindu:    { label: 'Mace Windu · Viola Profondo',  img: 'card_macewindu.png',    hex: '#b026ff' },
     darthvader:   { label: 'Darth Vader · Rosso Sith',     img: 'card_darthvader.png',   hex: '#ff0033' },
 };
@@ -168,33 +254,76 @@ function updateCartTotals() {
         discountRow.classList.add('hidden');
     }
 
-    // Aggiorna viewer 3D al colore dominante
+    // Aggiorna viewer al colore e immagine dominante
     const dominant = cartDominantVariant();
     if (totalQty > 0) {
         const meta = variantMeta[dominant];
         updateThemeColors(meta.hex, dominant);
         updateCheckoutBoxColor(meta.hex);
+        updateCheckoutPackImg(dominant, meta.hex);
     }
 }
 
 function setVariantQty(variant, qty) {
     cartQty[variant] = Math.max(0, Math.min(99, qty));
-    // Aggiorna UI della riga
     const row = document.querySelector(`.mv-row[data-variant="${variant}"]`);
     if (!row) return;
     row.querySelector('.mv-qty-val').textContent = cartQty[variant];
     row.classList.toggle('has-qty', cartQty[variant] > 0);
     updateCartTotals();
+
+    // Aggiorna immagine pack se questa variante è ora quella dominante
+    const dominant = cartDominantVariant();
+    const meta = variantMeta[dominant];
+    updateCheckoutPackImg(dominant, meta.hex);
+    updateThemeColors(meta.hex, dominant);
+}
+
+function selectVariant(variant) {
+    document.querySelectorAll('.mv-row').forEach(r => {
+        r.classList.remove('mv-selected');
+        r.style.removeProperty('box-shadow');
+        r.style.removeProperty('border-color');
+        r.style.removeProperty('background');
+    });
+    const row = document.querySelector(`.mv-row[data-variant="${variant}"]`);
+    const meta = variantMeta[variant];
+    if (row) {
+        row.classList.add('mv-selected');
+        const h = meta.hex;
+        row.style.borderColor = h;
+        row.style.background = hexToRgba(h, 0.08);
+        row.style.boxShadow = [
+            `0 0 0 1px ${hexToRgba(h, 0.5)}`,
+            `0 0 18px ${hexToRgba(h, 0.45)}`,
+            `0 0 45px ${hexToRgba(h, 0.2)}`,
+            `inset 0 0 20px ${hexToRgba(h, 0.07)}`
+        ].join(', ');
+    }
+    updateCheckoutPackImg(variant, meta.hex);
+}
+
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function initUiControls() {
     // ── Multi-variant qty controls ──
     document.querySelectorAll('.mv-row').forEach(row => {
         const variant = row.getAttribute('data-variant');
-        row.querySelector('.mv-plus').addEventListener('click', () =>
-            setVariantQty(variant, cartQty[variant] + 1));
-        row.querySelector('.mv-minus').addEventListener('click', () =>
-            setVariantQty(variant, cartQty[variant] - 1));
+        row.querySelector('.mv-plus').addEventListener('click', (e) => {
+            e.stopPropagation();
+            setVariantQty(variant, cartQty[variant] + 1);
+        });
+        row.querySelector('.mv-minus').addEventListener('click', (e) => {
+            e.stopPropagation();
+            setVariantQty(variant, cartQty[variant] - 1);
+        });
+        // Click sulla riga → selezione diretta
+        row.addEventListener('click', () => selectVariant(variant));
     });
 
     // ── Metodo pagamento ──
@@ -272,7 +401,15 @@ function initUiControls() {
     document.getElementById('claim-coupon-btn').addEventListener('click', () => {
         document.getElementById('checkout').scrollIntoView({ behavior: 'smooth' });
         document.getElementById('game-success-banner').classList.remove('visible');
-        if (couponInput && !couponInput.disabled) couponInput.value = 'NEONFORCE20';
+        if (couponInput && !couponInput.disabled) {
+            couponInput.value = 'NEON10';
+            couponApplyBtn.click();
+        }
+    });
+
+    // ── Rigioca ──
+    document.getElementById('replay-game-btn').addEventListener('click', () => {
+        _resetGame();
     });
 
     if (state.discountUnlocked) applyDiscount();
@@ -280,8 +417,9 @@ function initUiControls() {
 }
 
 function applyDiscount() {
-    cartState.discount   = DISCOUNT_AMT;
-    cartState.couponCode = 'NEONFORCE20';
+    const coupon = VALID_COUPONS['NEON10'];
+    cartState.discount   = coupon.amount;
+    cartState.couponCode = coupon.label;
     updateCartTotals();
 }
 
@@ -1179,13 +1317,13 @@ let gameScene, gameCamera, gameRenderer;
 const condomPacks  = [];   // THREE.Mesh[]
 const glowSpheres  = [];   // THREE.Mesh[]
 let   foundCount   = 0;
-const TOTAL_CONDOMS = 5;
+const TOTAL_CONDOMS = 4;
 
-// Colour themes for each hidden pack (cycles through the 4 characters)
-const HUNT_COLORS = ['#00ffff','#39ff14','#b026ff','#ff003c','#00ffff'];
+// Un colore per ogni personaggio: Stormtrooper, Grogu, Mace Windu, Darth Vader
+const HUNT_COLORS = ['#00ffff', '#39ff14', '#b026ff', '#ff003c'];
 let gameContainer, overlayCanvas, overlayCtx;
 let gameWidth, gameHeight;
-let ambientLight, sunLight, fillLight, neonAccent;
+let ambientLight, uvTorchLight;
 
 let mousePos      = { x: 0, y: 0 };
 let flashlightPos = { x: -1000, y: -1000 };
@@ -1207,6 +1345,8 @@ let roomBounds = new THREE.Box3(
     new THREE.Vector3(-7, 0, -7),
     new THREE.Vector3( 7, 4,  7)
 );
+let roomMeshes    = []; // mesh della stanza per collision detection
+let validFloorPts = []; // punti XZ con pavimento confermato (popolato al load)
 
 // ── Movimento WASD ────────────────────────────────────────────────────────────
 const keys = { w: false, a: false, s: false, d: false };
@@ -1228,12 +1368,27 @@ function _tickMovement() {
     const move = new THREE.Vector3();
     if (keys.w) move.addScaledVector(fwd,   MOVE_SPEED * dt);
     if (keys.s) move.addScaledVector(fwd,  -MOVE_SPEED * dt);
-    if (keys.a) move.addScaledVector(right, -MOVE_SPEED * dt);
-    if (keys.d) move.addScaledVector(right,  MOVE_SPEED * dt);
+    if (keys.a) move.addScaledVector(right,  MOVE_SPEED * dt);
+    if (keys.d) move.addScaledVector(right, -MOVE_SPEED * dt);
 
-    CAM_POS.add(move);
+    // Collision detection per componente (permette lo scivolamento lungo le pareti)
+    const WALL_DIST = 0.45;
+    const wallRay   = new THREE.Raycaster();
+    wallRay.far     = WALL_DIST;
 
-    // Clampa dentro i bounds della stanza (già ristretto al caricamento GLB)
+    const tryMove = (delta) => {
+        if (delta.lengthSq() < 1e-8) return;
+        const dir = delta.clone().normalize();
+        wallRay.set(CAM_POS, dir);
+        if (roomMeshes.length > 0 && wallRay.intersectObjects(roomMeshes, false).length > 0) return;
+        CAM_POS.add(delta);
+    };
+
+    // Prova X e Z separatamente per consentire lo slide
+    tryMove(new THREE.Vector3(move.x, 0, 0));
+    tryMove(new THREE.Vector3(0, 0, move.z));
+
+    // Fallback: clampa ai bounds esterni
     CAM_POS.x = Math.max(roomBounds.min.x, Math.min(roomBounds.max.x, CAM_POS.x));
     CAM_POS.z = Math.max(roomBounds.min.z, Math.min(roomBounds.max.z, CAM_POS.z));
     CAM_POS.y = 1.65; // altezza occhi fissa
@@ -1269,68 +1424,60 @@ function initGameSection() {
     gameRenderer = new THREE.WebGLRenderer({
         canvas:    document.getElementById('three-game-canvas'),
         antialias: true,
+        preserveDrawingBuffer: true,
     });
     gameRenderer.setSize(gameWidth, gameHeight);
     gameRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     gameRenderer.shadowMap.enabled  = true;
     gameRenderer.shadowMap.type     = THREE.PCFSoftShadowMap;
     gameRenderer.outputColorSpace   = THREE.SRGBColorSpace;
-    gameRenderer.toneMapping        = THREE.ACESFilmicToneMapping;
-    gameRenderer.toneMappingExposure = 1.0;
+    gameRenderer.toneMapping        = THREE.LinearToneMapping;
+    gameRenderer.toneMappingExposure = 2.5;
 
     // ── Scena ─────────────────────────────────────────────────────────────────
     gameScene = new THREE.Scene();
-    gameScene.background = new THREE.Color('#08080f');
+    gameScene.background = new THREE.Color('#0d1225');
 
     // ── Camera first-person ───────────────────────────────────────────────────
     gameCamera = new THREE.PerspectiveCamera(70, gameWidth / gameHeight, 0.05, 60);
     _applyCameraLook();
 
-    // ── Luci ACCESE ───────────────────────────────────────────────────────────
-    ambientLight = new THREE.AmbientLight('#fff5e0', 0.55);
+    // ── Luci stanza imperiale ─────────────────────────────────────────────────
+    // Ambiente base freddo-blu
+    ambientLight = new THREE.AmbientLight('#8899cc', 0.9);
     gameScene.add(ambientLight);
 
-    sunLight = new THREE.PointLight('#ffe8c0', 3.5, 20);
-    sunLight.position.set(0, 4.5, 0);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(1024, 1024);
-    sunLight.shadow.bias = -0.001;
-    gameScene.add(sunLight);
+    // Luce soffitto principale (bianca-fredda)
+    const ceilingLight = new THREE.DirectionalLight('#aabbff', 1.2);
+    ceilingLight.position.set(0, 8, 2);
+    ceilingLight.target.position.set(0, 0, 0);
+    gameScene.add(ceilingLight);
+    gameScene.add(ceilingLight.target);
 
-    fillLight = new THREE.PointLight('#ffd090', 1.8, 12);
-    fillLight.position.set(-3, 3, -1);
+    // Luce di riempimento da dietro camera (evita zone completamente nere)
+    const fillLight = new THREE.DirectionalLight('#334466', 0.5);
+    fillLight.position.set(0, 2, 10);
     gameScene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight('#c0d8ff', 0.3);
-    rimLight.position.set(3, 4, 3);
-    gameScene.add(rimLight);
+    // Luce UV che segue il mouse in 3D
+    uvTorchLight = new THREE.PointLight('#9933ff', 0, 8);
+    uvTorchLight.position.set(0, 1.5, 0);
+    gameScene.add(uvTorchLight);
 
-    neonAccent = new THREE.PointLight(state.themeColor, 0.3, 6);
-    neonAccent.position.set(0.5, 1.2, 0.8);
-    gameScene.add(neonAccent);
-
-    // ── Room shell — pareti, pavimento, soffitto ──────────────────────────────
-    _buildRoomShell();
-
-    // ── Carica stanza GLB ─────────────────────────────────────────────────────
+    // ── Carica stanza dal file originale ──────────────────────────────────────
     const roomLoader = new GLTFLoader();
     roomLoader.load(
-        'modern_bedroom.glb',
+        'room_starwars.glb',
         gltf => {
             const room = gltf.scene;
             const box  = new THREE.Box3().setFromObject(room);
             const sz   = box.getSize(new THREE.Vector3());
             const ctr  = box.getCenter(new THREE.Vector3());
 
-            // Scala la stanza: vogliamo che la dimensione maggiore sia ~12 unità
-            const scale = 10.0 / Math.max(sz.x, sz.y, sz.z);
+            // Scala in base all'altezza (Y) per avere ~3 unità di altezza percorribile
+            const scale = 3.0 / Math.max(sz.y, 0.01);
             room.scale.setScalar(scale);
-            // Centra X/Z, poggia sul pavimento
-            room.position.set(
-                -ctr.x * scale,
-                0,
-                -ctr.z * scale
-            );
+            room.position.set(-ctr.x * scale, 0, -ctr.z * scale);
             const box2 = new THREE.Box3().setFromObject(room);
             room.position.y -= box2.min.y;
 
@@ -1338,43 +1485,80 @@ function initGameSection() {
                 if (child.isMesh) {
                     child.castShadow    = true;
                     child.receiveShadow = true;
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => { m.side = THREE.DoubleSide; });
+                    } else if (child.material) {
+                        child.material.side = THREE.DoubleSide;
+                    }
+                    roomMeshes.push(child);
                 }
             });
             gameScene.add(room);
 
-            // Riposiziona luci nel centro della stanza scalata
             const box3  = new THREE.Box3().setFromObject(room);
             const cent3 = box3.getCenter(new THREE.Vector3());
-            sunLight.position.set(cent3.x, box3.max.y * 0.9, cent3.z);
-            fillLight.position.set(cent3.x - 2, box3.max.y * 0.7, cent3.z + 1);
 
-            // Salva i bounds della stanza per collisione pareti
-            // Usa i bounds XZ del pavimento con margine ampio per stare dentro le mura
+            // Soffitto: piano orizzontale all'altezza max della stanza
+            const ceilW = box3.max.x - box3.min.x;
+            const ceilD = box3.max.z - box3.min.z;
+            const ceilGeo = new THREE.PlaneGeometry(ceilW, ceilD);
+            const ceilMat = new THREE.MeshStandardMaterial({
+                color: 0x0a0c14,
+                roughness: 0.9,
+                metalness: 0.1,
+                side: THREE.DoubleSide,
+            });
+            const ceiling = new THREE.Mesh(ceilGeo, ceilMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set(cent3.x, box3.max.y, cent3.z);
+            ceiling.receiveShadow = true;
+            gameScene.add(ceiling);
+            roomMeshes.push(ceiling);
+
             roomBounds.copy(box3);
-            // Shrink borders: 0.7 unità dalle pareti (spessore muro + corpo giocatore)
-            roomBounds.min.x += 0.7;
-            roomBounds.min.z += 0.7;
-            roomBounds.max.x -= 0.7;
-            roomBounds.max.z -= 0.7;
+            roomBounds.min.x += 0.6; roomBounds.min.z += 0.6;
+            roomBounds.max.x -= 0.6; roomBounds.max.z -= 0.6;
 
-            // Sposta la camera al centro della stanza a eye-level
-            CAM_POS.set(cent3.x, 1.65, cent3.z);
+            // Scansione griglia per trovare tutti i punti con pavimento valido
+            {
+                const scanRay = new THREE.Raycaster();
+                const STEP = 0.6;
+                validFloorPts = [];
+                for (let sx = roomBounds.min.x + 0.3; sx <= roomBounds.max.x - 0.3; sx += STEP) {
+                    for (let sz = roomBounds.min.z + 0.3; sz <= roomBounds.max.z - 0.3; sz += STEP) {
+                        scanRay.set(new THREE.Vector3(sx, roomBounds.max.y + 0.5, sz), new THREE.Vector3(0, -1, 0));
+                        const hits = scanRay.intersectObjects(roomMeshes, false);
+                        for (const h of hits) {
+                            if (h.point.y < roomBounds.max.y - 0.1) {
+                                validFloorPts.push({ x: sx, z: sz, y: h.point.y });
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Camera: posiziona al primo punto valido vicino all'ingresso (min Z)
+            let startZ = cent3.z;
+            if (validFloorPts.length > 0) {
+                const frontPts = validFloorPts.slice().sort((a, b) => a.z - b.z);
+                const ref = frontPts[Math.floor(frontPts.length * 0.15)]; // 15% dal lato min Z
+                startZ = ref.z + 0.5;
+                CAM_POS.set(cent3.x, ref.y + 1.65, startZ);
+            } else {
+                CAM_POS.set(cent3.x, 1.65, startZ);
+            }
+            camLook.yaw   = 0;
+            camLook.pitch = -0.08;
             _applyCameraLook();
 
-            _spawnCondoms(cent3);
+            _spawnCondoms(cent3, startZ, null);
             _hideLoadingHint();
         },
         undefined,
         err => {
-            console.error('modern_bedroom.glb load error:', err);
-            // Fallback pavimento
-            const mesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(20, 20),
-                new THREE.MeshStandardMaterial({ color: '#111118', roughness: 0.8 })
-            );
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.receiveShadow = true;
-            gameScene.add(mesh);
+            console.warn('room_starwars.glb load error, fallback procedurale:', err);
+            _buildStarWarsRoom();
             _spawnCondoms(new THREE.Vector3(0, 0, 0));
             _hideLoadingHint();
         }
@@ -1413,30 +1597,22 @@ function initGameSection() {
         onGameClick(e);
     });
 
-    // ── Interruttore — stopPropagation per non attivare il canvas click ────────
-    const lightSwitchBtn = document.getElementById('light-switch');
-    lightSwitchBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        toggleRoomLight();
-    });
-
-    // ── Stile cursore iniziale ────────────────────────────────────────────────
-    gameContainer.style.cursor = 'crosshair';
-
-    // ── Nascondi overlay click-to-play (non serve più senza pointer lock) ──────
-    const clickOverlay = document.getElementById('game-click-overlay');
-    if (clickOverlay) clickOverlay.classList.add('hidden');
+    // ── Cursore torcia UV ──────────────────────────────────────────────────────
+    gameContainer.style.cursor = 'none';
 
     // ── WASD keyboard input ───────────────────────────────────────────────────
+    const isGameVisible = () => {
+        const rect = gameContainer.getBoundingClientRect();
+        return rect.top < window.innerHeight * 0.6 && rect.bottom > window.innerHeight * 0.4;
+    };
     document.addEventListener('keydown', e => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const inGame = isGameVisible();
         switch (e.code) {
-            case 'KeyW': case 'ArrowUp':    keys.w = true; e.preventDefault(); break;
-            case 'KeyS': case 'ArrowDown':  keys.s = true; e.preventDefault(); break;
-            case 'KeyA': case 'ArrowLeft':  keys.a = true; e.preventDefault(); break;
-            case 'KeyD': case 'ArrowRight': keys.d = true; e.preventDefault(); break;
-            // F o L = toggle luce da tastiera
-            case 'KeyF': case 'KeyL':       toggleRoomLight(); break;
+            case 'KeyW': case 'ArrowUp':    keys.w = true; if (inGame) e.preventDefault(); break;
+            case 'KeyS': case 'ArrowDown':  keys.s = true; if (inGame) e.preventDefault(); break;
+            case 'KeyA': case 'ArrowLeft':  keys.a = true; if (inGame) e.preventDefault(); break;
+            case 'KeyD': case 'ArrowRight': keys.d = true; if (inGame) e.preventDefault(); break;
         }
     });
     document.addEventListener('keyup', e => {
@@ -1448,6 +1624,21 @@ function initGameSection() {
         }
     });
 
+    // ── D-pad on-screen ───────────────────────────────────────────────────────
+    const keyMap = { ArrowUp: 'w', ArrowDown: 's', ArrowLeft: 'a', ArrowRight: 'd' };
+    document.querySelectorAll('.dpad-btn[data-key]').forEach(btn => {
+        const k = keyMap[btn.dataset.key];
+        if (!k) return;
+        const press   = () => { keys[k] = true;  btn.classList.add('pressed'); };
+        const release = () => { keys[k] = false; btn.classList.remove('pressed'); };
+        btn.addEventListener('mousedown',  press);
+        btn.addEventListener('touchstart', press,   { passive: true });
+        btn.addEventListener('mouseup',    release);
+        btn.addEventListener('mouseleave', release);
+        btn.addEventListener('touchend',   release);
+        btn.addEventListener('touchcancel',release);
+    });
+
     // ── Render loop ───────────────────────────────────────────────────────────
     (function gameAnimate() {
         requestAnimationFrame(gameAnimate);
@@ -1455,23 +1646,32 @@ function initGameSection() {
         const t = Date.now() * 0.001;
         condomPacks.forEach((p, i) => {
             p.rotation.y += 0.007;
-            if (!state.lightIsOn) {
-                const pulse = 0.9 + 0.35 * Math.sin(t * 1.8 + i * 1.3);
-                p.material.emissiveIntensity = pulse;
-                if (glowSpheres[i]) glowSpheres[i].material.opacity = 0.12 + 0.1 * Math.sin(t * 1.8 + i * 1.3);
-                if (p.userData.ptLight) p.userData.ptLight.intensity = 2.5 + 1.0 * Math.sin(t * 1.8 + i * 1.3);
+            const pMats = Array.isArray(p.material) ? p.material : [p.material];
+            // Illuminazione emissiva proporzionale alla vicinanza della torcia UV
+            let glow = 0;
+            if (uvTorchLight && uvTorchLight.intensity > 0) {
+                const dist = uvTorchLight.position.distanceTo(p.position);
+                glow = Math.max(0, 1 - dist / 2.2);  // raggio 2.2 unità
+                glow = glow * glow * 0.35;            // curva morbida, max 0.35
             }
+            const neonCol = p.userData.neonColor || '#00ffff';
+            pMats.forEach(m => {
+                if (m.emissive) { m.emissive.set(neonCol); m.emissiveIntensity = glow; }
+            });
+            if (glowSpheres[i]) glowSpheres[i].material.opacity = 0;
+            if (p.userData.ptLight) p.userData.ptLight.intensity = 0;
         });
-        neonAccent.color.set(state.themeColor);
         gameRenderer.render(gameScene, gameCamera);
-        if (!state.lightIsOn) drawFlashlightMask();
+        drawFlashlightMask();
     })();
 
     // ── Resize ────────────────────────────────────────────────────────────────
     window.addEventListener('resize', () => {
         if (!gameContainer) return;
-        gameWidth  = gameContainer.clientWidth;
-        gameHeight = gameContainer.clientHeight;
+        // Usa il wrapper (che può essere fullscreen) come riferimento dimensioni
+        const ref = gameContainer.parentElement || gameContainer;
+        gameWidth  = ref.clientWidth  || window.innerWidth;
+        gameHeight = ref.clientHeight || window.innerHeight;
         overlayCanvas.width  = gameWidth;
         overlayCanvas.height = gameHeight;
         gameCamera.aspect = gameWidth / gameHeight;
@@ -1481,188 +1681,127 @@ function initGameSection() {
     });
 }
 
-/* Crea una texture canvas con pattern sottile (stucco / lino) */
-function _makeWallTexture(baseColor, patternColor, size = 256) {
-    const cvs = document.createElement('canvas');
-    cvs.width = size; cvs.height = size;
-    const ctx = cvs.getContext('2d');
 
-    // base
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(0, 0, size, size);
 
-    // rumore fine (grana parete)
-    ctx.globalAlpha = 0.06;
-    for (let i = 0; i < 3000; i++) {
-        const x = Math.random() * size;
-        const y = Math.random() * size;
-        const r = Math.random() * 1.2;
-        ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#000';
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
+function _buildStarWarsRoom() {
+    const W = 10, H = 4, D = 18;
+
+    // ── Texture helper ────────────────────────────────────────────────────────
+    function makeTex(draw, size = 512) {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        draw(c.getContext('2d'), size);
+        const t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        return t;
     }
 
-    // sottili linee orizzontali (texture lino/intonaco)
-    ctx.globalAlpha = 0.04;
-    ctx.strokeStyle = patternColor;
-    ctx.lineWidth = 0.8;
-    for (let y = 0; y < size; y += 6) {
-        ctx.beginPath();
-        ctx.moveTo(0, y + Math.random() * 2);
-        ctx.lineTo(size, y + Math.random() * 2);
-        ctx.stroke();
-    }
-
-    ctx.globalAlpha = 1;
-    const tex = new THREE.CanvasTexture(cvs);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-}
-
-function _makeFloorTexture(size = 512) {
-    const cvs = document.createElement('canvas');
-    cvs.width = size; cvs.height = size;
-    const ctx = cvs.getContext('2d');
-
-    // parquet a doghe
-    const plankW = size / 4;
-    const plankH = size / 8;
-    const colors = ['#5a3e28', '#6b4c32', '#4e3320', '#7a5840'];
-
-    for (let row = 0; row < size / plankH; row++) {
-        const offset = (row % 2) * (plankW / 2);
-        for (let col = -1; col < size / plankW + 1; col++) {
-            const x = col * plankW - offset;
-            const y = row * plankH;
-            ctx.fillStyle = colors[(row + col + 4) % colors.length];
-            ctx.fillRect(x + 1, y + 1, plankW - 2, plankH - 2);
-
-            // venatura
-            ctx.globalAlpha = 0.12;
-            ctx.strokeStyle = '#2a1a0a';
-            ctx.lineWidth = 0.6;
-            for (let g = 0; g < 4; g++) {
-                const gx = x + Math.random() * plankW;
-                ctx.beginPath();
-                ctx.moveTo(gx, y);
-                ctx.lineTo(gx + (Math.random() - 0.5) * 20, y + plankH);
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
+    // Parete metallica imperiale: pannelli scuri con giunture
+    const wallTex = makeTex((ctx, s) => {
+        ctx.fillStyle = '#0d0f14';
+        ctx.fillRect(0, 0, s, s);
+        // pannelli verticali
+        ctx.strokeStyle = '#1e2530';
+        ctx.lineWidth = 3;
+        for (let x = 0; x < s; x += s / 4) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, s); ctx.stroke(); }
+        for (let y = 0; y < s; y += s / 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke(); }
+        // rivet dots
+        ctx.fillStyle = '#2a3040';
+        for (let x = s/8; x < s; x += s/4) for (let y = s/12; y < s; y += s/6) {
+            ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
         }
-    }
+    });
+    wallTex.repeat.set(2, 1);
 
-    // giunzioni tra doghe
-    ctx.strokeStyle = '#2a1a0a';
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.35;
-    for (let row = 0; row <= size / plankH; row++) {
-        ctx.beginPath();
-        ctx.moveTo(0, row * plankH);
-        ctx.lineTo(size, row * plankH);
-        ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
+    // Pavimento grigliato
+    const floorTex = makeTex((ctx, s) => {
+        ctx.fillStyle = '#080a0d';
+        ctx.fillRect(0, 0, s, s);
+        ctx.strokeStyle = '#1a2030';
+        ctx.lineWidth = 2;
+        const g = s / 16;
+        for (let i = 0; i <= s; i += g) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, s); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(s, i); ctx.stroke();
+        }
+        // effetto griglia metallica: piccoli fori scuri
+        ctx.fillStyle = '#04060a';
+        for (let x = g/2; x < s; x += g) for (let y = g/2; y < s; y += g) {
+            ctx.fillRect(x - g*0.3, y - g*0.3, g*0.6, g*0.6);
+        }
+    });
+    floorTex.repeat.set(4, 6);
 
-    const tex = new THREE.CanvasTexture(cvs);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-}
+    // Soffitto con strisce luce
+    const ceilTex = makeTex((ctx, s) => {
+        ctx.fillStyle = '#0a0c10';
+        ctx.fillRect(0, 0, s, s);
+        ctx.fillStyle = '#12182a';
+        ctx.fillRect(s*0.1, s*0.4, s*0.8, s*0.08);
+        ctx.fillRect(s*0.1, s*0.55, s*0.8, s*0.08);
+    });
+    ceilTex.repeat.set(1, 3);
 
-function _makeCeilingTexture(size = 256) {
-    const cvs = document.createElement('canvas');
-    cvs.width = size; cvs.height = size;
-    const ctx = cvs.getContext('2d');
-    ctx.fillStyle = '#e8e0d5';
-    ctx.fillRect(0, 0, size, size);
-    // sottile grana
-    ctx.globalAlpha = 0.04;
-    for (let i = 0; i < 2000; i++) {
-        const x = Math.random() * size;
-        const y = Math.random() * size;
-        ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#ccc';
-        ctx.beginPath();
-        ctx.arc(x, y, Math.random() * 1.5, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    const tex = new THREE.CanvasTexture(cvs);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-}
+    const wallMat  = new THREE.MeshStandardMaterial({ map: wallTex,  roughness: 0.7, metalness: 0.4, side: THREE.BackSide });
+    const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.5, metalness: 0.6, side: THREE.BackSide });
+    const ceilMat  = new THREE.MeshStandardMaterial({ map: ceilTex,  roughness: 0.8, metalness: 0.3, side: THREE.BackSide });
 
-function _buildRoomShell() {
-    const W = 16;   // larghezza
-    const H = 5.5;  // altezza
-    const D = 16;   // profondità
-
-    const wallTex     = _makeWallTexture('#b8a898', '#a09080');
-    const accentTex   = _makeWallTexture('#8a7060', '#6a5040'); // parete accent più scura
-    const floorTex    = _makeFloorTexture();
-    const ceilTex     = _makeCeilingTexture();
-
-    // Ripetizione texture sulle superfici grandi
-    wallTex.repeat.set(3, 1.5);
-    accentTex.repeat.set(2, 1.5);
-    floorTex.repeat.set(5, 5);
-    ceilTex.repeat.set(4, 4);
-
-    const wallMat   = new THREE.MeshStandardMaterial({ map: wallTex,   roughness: 0.85, metalness: 0.0, side: THREE.BackSide });
-    const accentMat = new THREE.MeshStandardMaterial({ map: accentTex, roughness: 0.90, metalness: 0.0, side: THREE.BackSide });
-    const floorMat  = new THREE.MeshStandardMaterial({ map: floorTex,  roughness: 0.80, metalness: 0.0, side: THREE.BackSide });
-    const ceilMat   = new THREE.MeshStandardMaterial({ map: ceilTex,   roughness: 0.90, metalness: 0.0, side: THREE.BackSide });
-
-    // BoxGeometry con 6 materiali separati [dx, sx, top, bottom, front, back]
-    const box = new THREE.Mesh(
+    const room = new THREE.Mesh(
         new THREE.BoxGeometry(W, H, D),
-        [
-            wallMat,    // destra
-            wallMat,    // sinistra
-            ceilMat,    // soffitto (top)
-            floorMat,   // pavimento (bottom)
-            wallMat,    // davanti
-            accentMat,  // dietro (parete accent — quella più visibile)
-        ]
+        [wallMat, wallMat, ceilMat, floorMat, wallMat, wallMat]
     );
-    box.position.set(0, H / 2, 0);
-    box.receiveShadow = true;
-    gameScene.add(box);
+    room.position.set(0, H / 2, 0);
+    room.receiveShadow = true;
+    gameScene.add(room);
 
-    // Battiscopa scuro su tutti e 4 i lati (sottile piano posizionato ai piedi)
-    const skirtMat = new THREE.MeshStandardMaterial({ color: '#2c1f14', roughness: 0.6 });
-    const skirtH   = 0.12;
-    const skirts = [
-        { pos: [0, skirtH / 2, -D / 2 + 0.01], rot: [0, 0, 0],         geo: [W, skirtH, 0.04] },
-        { pos: [0, skirtH / 2,  D / 2 - 0.01], rot: [0, Math.PI, 0],   geo: [W, skirtH, 0.04] },
-        { pos: [-W / 2 + 0.01, skirtH / 2, 0], rot: [0, Math.PI / 2, 0], geo: [D, skirtH, 0.04] },
-        { pos: [ W / 2 - 0.01, skirtH / 2, 0], rot: [0, -Math.PI / 2, 0], geo: [D, skirtH, 0.04] },
-    ];
-    skirts.forEach(s => {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(...s.geo), skirtMat);
-        m.position.set(...s.pos);
-        m.rotation.set(...s.rot);
-        gameScene.add(m);
+    // ── Strisce di luce rossa emergenza (floor level) ─────────────────────────
+    const stripMat = new THREE.MeshBasicMaterial({ color: '#3a0505' });
+    [[0, 0, -D/2+0.05, 0], [0, 0, D/2-0.05, Math.PI], [-W/2+0.05, 0, 0, Math.PI/2], [W/2-0.05, 0, 0, -Math.PI/2]].forEach(([x,,z, ry]) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(ry === 0 || ry === Math.PI ? W : D, 0.06, 0.04), stripMat);
+        m.position.set(x, 0.03, z); m.rotation.y = ry; gameScene.add(m);
     });
 
-    // Cornicione soffitto
-    const corniceH   = 0.08;
-    const corniceMat = new THREE.MeshStandardMaterial({ color: '#d8d0c5', roughness: 0.7 });
-    const cornices = [
-        { pos: [0, H - corniceH / 2, -D / 2 + 0.01], rot: [0, 0, 0],              geo: [W, corniceH, 0.06] },
-        { pos: [0, H - corniceH / 2,  D / 2 - 0.01], rot: [0, Math.PI, 0],        geo: [W, corniceH, 0.06] },
-        { pos: [-W / 2 + 0.01, H - corniceH / 2, 0], rot: [0, Math.PI / 2, 0],    geo: [D, corniceH, 0.06] },
-        { pos: [ W / 2 - 0.01, H - corniceH / 2, 0], rot: [0, -Math.PI / 2, 0],   geo: [D, corniceH, 0.06] },
-    ];
-    cornices.forEach(s => {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(...s.geo), corniceMat);
-        m.position.set(...s.pos);
-        m.rotation.set(...s.rot);
-        gameScene.add(m);
+    // ── Pannello di controllo sul fondo ───────────────────────────────────────
+    const panelMat = new THREE.MeshStandardMaterial({ color: '#0e1420', roughness: 0.3, metalness: 0.8 });
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 0.12), panelMat);
+    panel.position.set(0, 1.4, -D/2 + 0.2);
+    gameScene.add(panel);
+    // indicatori led sul pannello
+    ['#ff003c','#39ff14','#00ffff','#b026ff','#ff6600','#39ff14'].forEach((col, i) => {
+        const led = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.02),
+            new THREE.MeshBasicMaterial({ color: col }));
+        led.position.set(-0.7 + i * 0.28, 1.55, -D/2 + 0.27);
+        gameScene.add(led);
+        // luce puntuale dal led
+        const l = new THREE.PointLight(col, 0.4, 1.5);
+        l.position.copy(led.position);
+        gameScene.add(l);
     });
+
+    // ── Colonne laterali (piloni imperiali) ───────────────────────────────────
+    const pillarMat = new THREE.MeshStandardMaterial({ color: '#111620', roughness: 0.6, metalness: 0.5 });
+    [-D/2 + 3, -D/2 + 8, -D/2 + 13].forEach(z => {
+        [-W/2 + 0.3, W/2 - 0.3].forEach(x => {
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.35, H, 0.35), pillarMat);
+            p.position.set(x, H/2, z);
+            gameScene.add(p);
+        });
+    });
+
+    // ── Luce ambiente debolissima rossa-imperiale ─────────────────────────────
+    const redAcc = new THREE.PointLight('#200000', 1.5, 12);
+    redAcc.position.set(0, 0.5, 4);
+    gameScene.add(redAcc);
+
+    // Aggiorna roomBounds per la stanza
+    roomBounds.set(
+        new THREE.Vector3(-W/2 + 0.5, 0, -D/2 + 0.5),
+        new THREE.Vector3( W/2 - 0.5, H,  D/2 - 0.5)
+    );
+
+    // Posiziona camera all'ingresso guardando in fondo
+    CAM_POS.set(0, 1.65, D/2 - 1.5);
+    _applyCameraLook();
 }
 
 function _hideLoadingHint() {
@@ -1676,23 +1815,56 @@ function _hideLoadingHint() {
 }
 
 // ── Treasure-hunt spawn ───────────────────────────────────────────────────────
-function _buildPackTexture(neonColor) {
-    const cvs = document.createElement('canvas');
-    cvs.width = 128; cvs.height = 128;
-    const c = cvs.getContext('2d');
-    c.fillStyle = '#06060f'; c.fillRect(0, 0, 128, 128);
-    c.strokeStyle = neonColor + '88'; c.lineWidth = 3; c.strokeRect(6, 6, 116, 116);
-    c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center';
-    c.fillText('DUREX', 64, 50);
-    c.fillStyle = neonColor; c.font = 'bold 13px sans-serif';
-    c.fillText('NEON COLLECTION', 64, 76);
-    // tiny star-wars symbol
-    c.fillStyle = neonColor + 'cc'; c.font = '18px sans-serif';
-    c.fillText('★', 64, 104);
-    return new THREE.CanvasTexture(cvs);
+// Mappa variante → colore emissivo neon per il glow UV
+const VARIANT_KEYS  = ['stormtrooper', 'grogu', 'macewindu', 'darthvader'];
+const VARIANT_GLOW  = { stormtrooper: '#00cfff', grogu: '#39ff14', macewindu: '#b026ff', darthvader: '#ff003c' };
+const _packTexCache = {};
+const _texLoader    = new THREE.TextureLoader();
+
+function _getPackTex(variantKey) {
+    if (!_packTexCache[variantKey]) {
+        _packTexCache[variantKey] = _texLoader.load(`pack_${variantKey}.png`);
+    }
+    return _packTexCache[variantKey];
 }
 
-function _spawnCondoms(center) {
+// Materiali multi-face per BoxGeometry: +X,-X,+Y,-Y,+Z(front),-Z(back)
+function _buildPackMaterials(variantKey) {
+    // MeshStandardMaterial: risponde alla torcia UV (PointLight), buio senza luce
+    const front = new THREE.MeshStandardMaterial({
+        map:       _getPackTex(variantKey),
+        roughness: 0.3,
+        metalness: 0.5,
+        emissiveIntensity: 0,
+    });
+    const side = new THREE.MeshStandardMaterial({
+        color:     0x111118,
+        roughness: 0.7,
+        metalness: 0.3,
+        emissiveIntensity: 0,
+    });
+    // BoxGeometry face order: right, left, top, bottom, front, back
+    return [side, side, side, side, front, side];
+}
+
+function _resetGame(center) {
+    // Rimuove pack rimasti in scena
+    condomPacks.forEach(p => gameScene.remove(p));
+    condomPacks.length = 0;
+    foundCount = 0;
+    state.gameCompleted = false;
+
+    const hudFound = document.getElementById('hud-found');
+    if (hudFound) hudFound.textContent = '0';
+    const hud = document.getElementById('game-hud');
+    if (hud) hud.classList.remove('hidden');
+    const banner = document.getElementById('game-success-banner');
+    if (banner) { banner.classList.remove('visible'); banner.classList.add('hidden'); }
+
+    _spawnCondoms(null, CAM_POS.z, roomBounds.max.z);
+}
+
+function _spawnCondoms(center, camStartZ, roomMaxZ) {
     const b = roomBounds;
 
     // Centro e margine sicuro dai muri (0.4 unità di padding)
@@ -1701,49 +1873,94 @@ function _spawnCondoms(center) {
     const minZ = b.min.z + PAD, maxZ = b.max.z - PAD;
     const cx = (minX + maxX) / 2;
     const cz = (minZ + maxZ) / 2;
-    const hw = (maxX - minX) / 2;   // mezzo raggio X usabile
-    const hz = (maxZ - minZ) / 2;   // mezzo raggio Z usabile
-
-    // Clamp helper
+    const hw = (maxX - minX) / 2;
+    const hz = (maxZ - minZ) / 2;
     const clampX = x => Math.max(minX, Math.min(maxX, x));
     const clampZ = z => Math.max(minZ, Math.min(maxZ, z));
+    const rnd = (a, b) => a + Math.random() * (b - a);
 
-    const spots = [
-        { x: clampX(cx + hw * 0.75), y: 0.12, z: clampZ(cz + hz * 0.70), ry: 0.3  },  // angolo dx-avanti
-        { x: clampX(cx - hw * 0.75), y: 0.12, z: clampZ(cz - hz * 0.70), ry: 0.3  },  // angolo sx-fondo
-        { x: clampX(cx + hw * 0.50), y: 0.78, z: clampZ(cz - hz * 0.40), ry: 0.3  },  // piano comodino
-        { x: clampX(cx - hw * 0.40), y: 1.42, z: clampZ(cz + hz * 0.55), ry: 0.3  },  // mensola
-        { x: clampX(cx + hw * 0.10), y: 0.12, z: clampZ(cz - hz * 0.75), ry: 0.3  },  // parete fondo centro
-    ];
+    // Raycast verso il basso → altezza pavimento reale
+    const floorRay = new THREE.Raycaster();
+    const _floorY = (x, z) => {
+        floorRay.set(new THREE.Vector3(x, roomBounds.max.y + 0.5, z), new THREE.Vector3(0, -1, 0));
+        const hits = floorRay.intersectObjects(roomMeshes, false);
+        for (const h of hits) {
+            if (h.point.y < roomBounds.max.y - 0.1) return h.point.y;
+        }
+        return null; // nessun pavimento trovato → posizione non valida
+    };
+
+    // Spawn davanti alla camera in range Z confermato con pavimento
+    // Usa i punti floor validi scansionati al caricamento
+    const camZ = camStartZ ?? (cz - hz * 0.3);
+    let pool = validFloorPts.filter(p => p.z >= camZ - 0.5);
+    if (pool.length < TOTAL_CONDOMS) pool = validFloorPts.length >= TOTAL_CONDOMS ? validFloorPts : pool;
+
+    pool.sort((a, b) => a.z - b.z);
+    const zMin2 = pool[0]?.z ?? cz - hz;
+    const zMax2 = pool[pool.length - 1]?.z ?? cz + hz;
+
+    // Dividi in 4 zone, piazza ogni pack nel 20% centrale della propria zona
+    // così ogni pack è lontano dagli altri almeno (zRange/4 * 0.6) unità
+    const candidates = [];
+    const MIN_DIST = 2.5; // distanza minima tra pack (XZ)
+    for (let zone = 0; zone < TOTAL_CONDOMS; zone++) {
+        const zLo = zMin2 + (zMax2 - zMin2) * (zone / TOTAL_CONDOMS);
+        const zHi = zMin2 + (zMax2 - zMin2) * ((zone + 1) / TOTAL_CONDOMS);
+        // Usa solo il 60% centrale della zona per massimizzare la separazione tra zone
+        const zLoInner = zLo + (zHi - zLo) * 0.2;
+        const zHiInner = zLo + (zHi - zLo) * 0.8;
+        const inZone = pool.filter(p => p.z >= zLoInner && p.z < zHiInner);
+        const fallback = pool.filter(p => p.z >= zLo && p.z < zHi);
+        const bucket = inZone.length > 0 ? inZone : (fallback.length > 0 ? fallback : pool);
+
+        // Prova fino a 20 candidati e scegli quello più lontano dai già scelti
+        let best = null, bestDist = -1;
+        const tries = Math.min(20, bucket.length);
+        const shuffled = bucket.slice().sort(() => Math.random() - 0.5);
+        for (let t = 0; t < tries; t++) {
+            const pt = shuffled[t];
+            let minD = Infinity;
+            for (const prev of candidates) {
+                const dx = pt.x - prev.x, dz = pt.z - prev.z;
+                minD = Math.min(minD, Math.sqrt(dx*dx + dz*dz));
+            }
+            if (minD > bestDist) { bestDist = minD; best = pt; }
+        }
+        if (!best) best = bucket[Math.floor(Math.random() * bucket.length)];
+        candidates.push({ x: best.x, z: best.z, y: best.y, ry: rnd(0, Math.PI * 2) });
+    }
+
+    const spots = candidates;
+
+    // Shuffle varianti per assegnarne una diversa per ogni partita
+    const shuffledVariants = [...VARIANT_KEYS].sort(() => Math.random() - 0.5);
 
     spots.forEach((spot, i) => {
-        const color = HUNT_COLORS[i % HUNT_COLORS.length];
-        const geo = new THREE.BoxGeometry(0.22, 0.28, 0.06);
-        const mat = new THREE.MeshStandardMaterial({
-            map: _buildPackTexture(color),
-            roughness: 0.2, metalness: 0.6,
-            emissive: new THREE.Color('#000000'),
-            emissiveIntensity: 0,
-        });
-        const pack = new THREE.Mesh(geo, mat);
+        const variantKey = shuffledVariants[i % shuffledVariants.length];
+        const glowColor  = VARIANT_GLOW[variantKey];
+        const geo  = new THREE.BoxGeometry(0.22, 0.28, 0.06);
+        const mats = _buildPackMaterials(variantKey);
+        const pack = new THREE.Mesh(geo, mats);
+        // Posa il pacco esattamente sul pavimento rilevato + metà altezza del box
         pack.position.set(spot.x, spot.y + 0.14, spot.z);
         pack.rotation.y = spot.ry;
         pack.castShadow = true;
-        pack.userData.neonColor = color;
+        pack.userData.neonColor  = glowColor;
+        pack.userData.variantKey = variantKey;
         gameScene.add(pack);
         condomPacks.push(pack);
 
         const glowMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(color), transparent: true,
+            color: new THREE.Color(glowColor), transparent: true,
             opacity: 0, blending: THREE.AdditiveBlending, side: THREE.BackSide,
         });
-        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), glowMat);
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), glowMat);
         glow.position.copy(pack.position);
         gameScene.add(glow);
         glowSpheres.push(glow);
 
-        // Luce puntuale: illumina la scena attorno al condom nel buio
-        const ptLight = new THREE.PointLight(color, 0, 4.0);
+        const ptLight = new THREE.PointLight(glowColor, 0, 3.5);
         ptLight.position.copy(pack.position);
         ptLight.position.y += 0.15;
         gameScene.add(ptLight);
@@ -1777,8 +1994,8 @@ function toggleRoomLight() {
         });
         // Hide all pack glows + spegni luci puntuali quando la luce torna
         condomPacks.forEach(p => {
-            p.material.emissive.set('#000000');
-            p.material.emissiveIntensity = 0;
+            const ms = Array.isArray(p.material) ? p.material : [p.material];
+            ms.forEach(m => { if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 0; });
             if (p.userData.ptLight) p.userData.ptLight.intensity = 0;
         });
         glowSpheres.forEach(g => { g.material.opacity = 0; });
@@ -1800,14 +2017,10 @@ function toggleRoomLight() {
             },
         });
         drawFlashlightMask();
-        // Accendi emissione base + luci puntuali su tutti i pack (neon glow nel buio)
-        condomPacks.forEach((p, i) => {
-            const c = new THREE.Color(p.userData.neonColor || '#00ffff');
-            p.material.emissive.copy(c);
-            p.material.emissiveIntensity = 1.2;
-            glowSpheres[i].material.color.copy(c);
-            glowSpheres[i].material.opacity = 0.18;
-            if (p.userData.ptLight) p.userData.ptLight.intensity = 2.5;
+        condomPacks.forEach(p => {
+            const mats = Array.isArray(p.material) ? p.material : [p.material];
+            mats.forEach(m => { if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 0; });
+            if (p.userData.ptLight) p.userData.ptLight.intensity = 0;
         });
         // Show HUD (only if game not yet fully completed)
         if (!state.gameCompleted) {
@@ -1824,6 +2037,19 @@ function onGameMouseMove(e) {
     mousePos.y = e.clientY - rect.top;
     flashlightPos.x = mousePos.x;
     flashlightPos.y = mousePos.y;
+
+    // Muovi la luce UV 3D: ray vs piano orizzontale a Y=1.2
+    if (uvTorchLight) {
+        const nx = (mousePos.x / gameWidth) * 2 - 1;
+        const ny = -(mousePos.y / gameHeight) * 2 + 1;
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(new THREE.Vector2(nx, ny), gameCamera);
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.2);
+        const target = new THREE.Vector3();
+        ray.ray.intersectPlane(plane, target);
+        if (target) uvTorchLight.position.copy(target);
+        uvTorchLight.intensity = 3.5;
+    }
 
     // Drag-to-look
     if (camLook.isDragging) {
@@ -1847,6 +2073,18 @@ function onGameTouchMove(e) {
     mousePos.y = t.clientY - rect.top;
     flashlightPos.x = mousePos.x;
     flashlightPos.y = mousePos.y;
+
+    if (uvTorchLight) {
+        const nx = (mousePos.x / gameWidth) * 2 - 1;
+        const ny = -(mousePos.y / gameHeight) * 2 + 1;
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(new THREE.Vector2(nx, ny), gameCamera);
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.2);
+        const target = new THREE.Vector3();
+        ray.ray.intersectPlane(plane, target);
+        if (target) uvTorchLight.position.copy(target);
+        uvTorchLight.intensity = 3.5;
+    }
 
     if (camLook.isDragging) {
         const dx = t.clientX - camLook.lastX;
@@ -1873,63 +2111,46 @@ function _projectToScreen(pos3d) {
 }
 
 function drawFlashlightMask() {
-    if (state.lightIsOn) return;
-
     overlayCtx.clearRect(0, 0, gameWidth, gameHeight);
 
-    // Sfondo nero coprente
-    overlayCtx.fillStyle = 'rgba(2, 2, 4, 0.97)';
-    overlayCtx.fillRect(0, 0, gameWidth, gameHeight);
+    if (flashlightPos.x < 0) return; // mouse non ancora entrato
 
-    overlayCtx.globalCompositeOperation = 'destination-out';
+    const radius = 190;
 
-    // ── Torcia (flashlight) seguita dal mouse ─────────────────────────────────
-    const radius = 200;
-    const grad = overlayCtx.createRadialGradient(
+    // ── Tinta UV viola sul cono ───────────────────────────────────────────────
+    overlayCtx.globalCompositeOperation = 'source-over';
+    const uvTint = overlayCtx.createRadialGradient(
         flashlightPos.x, flashlightPos.y, 0,
         flashlightPos.x, flashlightPos.y, radius
     );
-    grad.addColorStop(0,    'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.95)');
-    grad.addColorStop(0.65, 'rgba(255, 255, 255, 0.6)');
-    grad.addColorStop(1,    'rgba(255, 255, 255, 0)');
-    overlayCtx.fillStyle = grad;
+    uvTint.addColorStop(0,   'rgba(120, 0, 220, 0.22)');
+    uvTint.addColorStop(0.5, 'rgba(80, 0, 160, 0.10)');
+    uvTint.addColorStop(1,   'rgba(40, 0, 90, 0)');
+    overlayCtx.fillStyle = uvTint;
     overlayCtx.beginPath();
     overlayCtx.arc(flashlightPos.x, flashlightPos.y, radius, 0, Math.PI * 2);
     overlayCtx.fill();
 
-    // ── Aloni neon per ogni condom (visibili nel buio) ────────────────────────
-    condomPacks.forEach((p, i) => {
-        const sp = _projectToScreen(p.position);
-        if (sp.behind) return; // dietro la camera, non visibile
-        // Fuori dall'area visibile del canvas
-        if (sp.x < -80 || sp.x > gameWidth + 80 || sp.y < -80 || sp.y > gameHeight + 80) return;
+    // ── Cerchio torcia UV (bordo viola) ───────────────────────────────────────
+    overlayCtx.strokeStyle = 'rgba(160, 0, 255, 0.45)';
+    overlayCtx.lineWidth = 1.5;
+    overlayCtx.beginPath();
+    overlayCtx.arc(flashlightPos.x, flashlightPos.y, radius * 0.9, 0, Math.PI * 2);
+    overlayCtx.stroke();
 
-        const pulse = p.material.emissiveIntensity; // usa il valore pulsante già calcolato
-        const haloR = 80 + pulse * 35;
-        const col = p.userData.neonColor || '#00ffff';
+    // ── Punto centrale (mirino torcia) ────────────────────────────────────────
+    overlayCtx.fillStyle = 'rgba(200, 100, 255, 0.7)';
+    overlayCtx.beginPath();
+    overlayCtx.arc(flashlightPos.x, flashlightPos.y, 3, 0, Math.PI * 2);
+    overlayCtx.fill();
 
-        // Foro nell'overlay: abbastanza grande da mostrare il pack e il suo alone colorato
-        const halo = overlayCtx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, haloR);
-        halo.addColorStop(0,    `rgba(255,255,255,${0.82 + pulse * 0.15})`);
-        halo.addColorStop(0.4,  `rgba(255,255,255,${0.55 + pulse * 0.1})`);
-        halo.addColorStop(0.75, `rgba(255,255,255,${0.20})`);
-        halo.addColorStop(1,    'rgba(255,255,255,0)');
-        overlayCtx.fillStyle = halo;
-        overlayCtx.beginPath();
-        overlayCtx.arc(sp.x, sp.y, haloR, 0, Math.PI * 2);
-        overlayCtx.fill();
-    });
-
-    overlayCtx.globalCompositeOperation = 'source-over';
-
-    // Griglia olografica sottile
-    overlayCtx.strokeStyle = 'rgba(0, 255, 255, 0.025)';
+    // ── Griglia UV sottile ────────────────────────────────────────────────────
+    overlayCtx.strokeStyle = 'rgba(100, 0, 200, 0.02)';
     overlayCtx.lineWidth = 1;
-    for (let x = 0; x < gameWidth; x += 30) {
+    for (let x = 0; x < gameWidth; x += 32) {
         overlayCtx.beginPath(); overlayCtx.moveTo(x, 0); overlayCtx.lineTo(x, gameHeight); overlayCtx.stroke();
     }
-    for (let y = 0; y < gameHeight; y += 30) {
+    for (let y = 0; y < gameHeight; y += 32) {
         overlayCtx.beginPath(); overlayCtx.moveTo(0, y); overlayCtx.lineTo(gameWidth, y); overlayCtx.stroke();
     }
 }
@@ -1938,49 +2159,33 @@ function drawFlashlightMask() {
 const raycaster = new THREE.Raycaster();
 const mouseNormalized = new THREE.Vector2();
 
+const TORCH_RADIUS = 80;
+
 function checkRaycastTarget(clientX, clientY, rect) {
-    if (state.lightIsOn || state.gameCompleted || condomPacks.length === 0) return;
+    if (state.gameCompleted || condomPacks.length === 0) return;
 
     mouseNormalized.x = ((clientX - rect.left) / gameWidth) * 2 - 1;
     mouseNormalized.y = -((clientY - rect.top) / gameHeight) * 2 + 1;
 
+    // ── Raycaster: puntamento diretto → colleziona pack ──────────────────────
     raycaster.setFromCamera(mouseNormalized, gameCamera);
     const intersects = raycaster.intersectObjects(condomPacks);
-
-    // Reset tutti i pack all'intensità base (neon di fondo nel buio)
-    condomPacks.forEach((p, i) => {
-        const c = new THREE.Color(p.userData.neonColor || '#00ffff');
-        p.material.emissive.copy(c);
-        p.material.emissiveIntensity = 1.2;
-        glowSpheres[i].material.color.copy(c);
-        glowSpheres[i].material.opacity = 0.18;
-    });
-
     const crosshair = document.getElementById('game-crosshair');
+
     if (intersects.length > 0) {
         const hit = intersects[0].object;
-        const idx = condomPacks.indexOf(hit);
-        if (idx !== -1) {
-            const packColor = new THREE.Color(hit.userData.neonColor || state.themeColor);
-            hit.material.emissive.copy(packColor);
-            hit.material.emissiveIntensity = 2.5;
-            glowSpheres[idx].material.color.copy(packColor);
-            glowSpheres[idx].material.opacity = 0.3 + Math.sin(Date.now() * 0.008) * 0.12;
+        if (condomPacks.indexOf(hit) !== -1) {
             if (crosshair) crosshair.classList.add('on-target');
-            if (state.audioEnabled && !state.humPlaying) {
-                state.humPlaying = true;
-                audioEngine.playLightsaberIgnite(state.themeColor);
-            }
         }
     } else {
         if (crosshair) crosshair.classList.remove('on-target');
-        state.humPlaying = false;
     }
 }
 
 function _collectCondom(pack, idx) {
     // Flash the pack before removing
-    pack.material.emissiveIntensity = 8.0;
+    const _cm = Array.isArray(pack.material) ? pack.material : [pack.material];
+    _cm.forEach(m => { if (m.emissive) { m.emissive.set('#ffffff'); m.emissiveIntensity = 2.0; } });
     glowSpheres[idx].material.opacity = 0.9;
 
     if (state.audioEnabled) audioEngine.playSuccessChime();
@@ -2023,14 +2228,14 @@ function _collectCondom(pack, idx) {
             if (hud) hud.classList.add('hidden');
 
             const banner = document.getElementById('game-success-banner');
-            if (banner) banner.classList.add('visible');
+            if (banner) {
+                banner.classList.remove('hidden');
+                banner.classList.add('visible');
+            }
 
             state.discountUnlocked = true;
             document.body.classList.add('discount-unlocked');
-            applyDiscount();
-
-            // Regalo: aggiungi 1 pacco gratis al carrello
-            _addFreePackToCart();
+            applyDiscount(); // applica 10% al carrello automaticamente
         }, 500);
     }
 }
@@ -2070,7 +2275,7 @@ function _addFreePackToCart() {
 }
 
 function onGameClick(e) {
-    if (state.lightIsOn || state.gameCompleted || condomPacks.length === 0) return;
+    if (state.gameCompleted || condomPacks.length === 0) return;
 
     const rect = gameContainer.getBoundingClientRect();
     mouseNormalized.x = ((e.clientX - rect.left) / gameWidth) * 2 - 1;
@@ -2095,17 +2300,23 @@ let checkoutContainerWidth, checkoutContainerHeight;
 let ledLines = [];
 
 function initCheckoutSection() {
+    // Se il canvas 3D non esiste (sostituito da img), mostra subito il pack di default
+    if (!document.getElementById('three-checkout-canvas')) {
+        updateCheckoutPackImg('stormtrooper', variantMeta.stormtrooper.hex);
+        return;
+    }
+
     const checkoutContainer = document.getElementById('checkout-canvas-container');
     checkoutContainerWidth = checkoutContainer.clientWidth;
     checkoutContainerHeight = checkoutContainer.clientHeight;
 
     // 1. Setup Scena
     checkoutScene = new THREE.Scene();
-    
+
     // Camera
     checkoutCamera = new THREE.PerspectiveCamera(35, checkoutContainerWidth / checkoutContainerHeight, 0.1, 100);
     checkoutCamera.position.set(0, 0, 4.5);
-    
+
     // Renderer
     checkoutRenderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-checkout-canvas'), antialias: true, alpha: true });
     checkoutRenderer.setSize(checkoutContainerWidth, checkoutContainerHeight);
@@ -2294,9 +2505,32 @@ function createProductBoxMesh() {
 }
 
 // Aggiorna il colore neon della scatola in 3D
+const _packV = Date.now();
+const packImgMap = {
+    stormtrooper: `pack_stormtrooper.png?v=${_packV}`,
+    grogu:        `pack_grogu.png?v=${_packV}`,
+    macewindu:    `pack_macewindu.png?v=${_packV}`,
+    darthvader:   `pack_darthvader.png?v=${_packV}`,
+};
+
+function updateCheckoutPackImg(variant, hexColor) {
+    const img = document.getElementById('checkout-pack-img');
+    if (!img) return;
+    const src = packImgMap[variant];
+    if (!src || img.src.endsWith(src)) return;
+    img.classList.add('switching');
+    setTimeout(() => {
+        img.src = src;
+        img.style.removeProperty('filter');
+        img.closest('.checkout-img-viewer')?.style.setProperty('--theme-neon', hexColor);
+        img.classList.remove('switching');
+    }, 300);
+}
+
 function updateCheckoutBoxColor(hexColor) {
+    if (!checkoutPointLight) return;
     const newColor = new THREE.Color(hexColor);
-    
+
     // Aggiorna luce pointlight che illumina la confezione
     checkoutPointLight.color.copy(newColor);
     
